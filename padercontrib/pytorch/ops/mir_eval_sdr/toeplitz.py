@@ -41,8 +41,6 @@ def toeplitz(c, r=None):
 
     Examples
     --------
-    >>> torch.__version__
-    '1.4.0'
     >>> toeplitz([1,2,3], [1,4,5,6])
     tensor([[1, 4, 5, 6],
             [2, 1, 4, 5],
