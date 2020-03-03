@@ -52,6 +52,7 @@ def pt_wiener_filter_predict(observation, desired, filter_length, return_w=False
     w = argmin_w ( sum( |x * w - d|^2 ) )
     return x * w
 
+    >>> from paderbox.notebook import pprint
     >>> from padercontrib.pytorch.ops.mir_eval_sdr.np_wiener_filter import np_wiener_filter_predict
     >>> x = np.array([1, 2, 3, 4, 5.])
     >>> y = np.array([1, 2, 1, 2, 1.])
@@ -73,21 +74,18 @@ def pt_wiener_filter_predict(observation, desired, filter_length, return_w=False
 
     >>> x = np.array([[1, 2, 3, 4, 5.], [1, 2, 1, 2, 1.]])
     >>> y = np.array([1, 2, 1, 2, 1.])
-    >>> _project(x, y, 2)
-    array([1.00000000e+00, 2.00000000e+00, 1.00000000e+00, 2.00000000e+00,
-           1.00000000e+00, 1.11022302e-16])
-    >>> np_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2)
-    array([1.00000000e+00, 2.00000000e+00, 1.00000000e+00, 2.00000000e+00,
-           1.00000000e+00, 1.48029737e-16])
-    >>> np_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)
-    array([[0.00000000e+00, 0.00000000e+00],
-           [1.00000000e+00, 2.52259851e-18]])
-    >>> pt_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)
-    tensor([[0.0000e+00, 0.0000e+00],
-            [1.0000e+00, 2.5226e-18]], dtype=torch.float64)
-    >>> pt_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2)
-    tensor([ 1.0000e+00,  2.0000e+00,  1.0000e+00,  2.0000e+00,  1.0000e+00,
-            -8.1372e-17], dtype=torch.float64)
+    >>> pprint(_project(x, y, 2))
+    array([1., 2., 1., 2., 1., 0.])
+    >>> pprint(np_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2))
+    array([1., 2., 1., 2., 1., 0.])
+    >>> pprint(np_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True))
+    array([[0., 0.],
+           [1., 0.]])
+    >>> pprint(np.asarray(pt_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)))
+    array([[0., 0.],
+           [1., 0.]])
+    >>> pprint(np.asarray(pt_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2)))
+    array([ 1.,  2.,  1.,  2.,  1., -0.])
 
     """
     if len(observation.shape) == 1:

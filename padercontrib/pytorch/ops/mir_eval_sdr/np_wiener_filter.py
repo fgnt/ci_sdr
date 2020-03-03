@@ -82,6 +82,7 @@ def np_wiener_filter_predict(observation, desired, filter_order, return_w=False)
     w = argmin_w ( sum( |x * w - d|^2 ) )
     return x * w
 
+    >>> from paderbox.notebook import pprint
     >>> x = np.array([1, 2, 3, 4, 5])
     >>> y = np.array([1, 2, 1, 2, 1])
     >>> from mir_eval.separation import _project
@@ -100,12 +101,10 @@ def np_wiener_filter_predict(observation, desired, filter_order, return_w=False)
     >>> _project(np.array([x, -x]), y, 2)
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
-    >>> np_wiener_filter_predict(np.array([x, y]), y, 2)
-    array([1.00000000e+00, 2.00000000e+00, 1.00000000e+00, 2.00000000e+00,
-           1.00000000e+00, 1.48029737e-16])
-    >>> _project(np.array([x, y]), y, 2)
-    array([1.00000000e+00, 2.00000000e+00, 1.00000000e+00, 2.00000000e+00,
-           1.00000000e+00, 1.11022302e-16])
+    >>> pprint(np_wiener_filter_predict(np.array([x, y]), y, 2))
+    array([1., 2., 1., 2., 1., 0.])
+    >>> pprint(_project(np.array([x, y]), y, 2))
+    array([1., 2., 1., 2., 1., 0.])
 
     """
     n_fft = int(2**np.ceil(np.log2(
