@@ -104,7 +104,7 @@ def np_wiener_filter_predict(observation, desired, filter_order, return_w=False)
     >>> pprint(np_wiener_filter_predict(np.array([x, y]), y, 2))
     array([1., 2., 1., 2., 1., 0.])
     >>> pprint(_project(np.array([x, y]), y, 2))
-    array([1., 2., 1., 2., 1., 0.])
+    array([ 1.,  2.,  1.,  2.,  1., -0.])
 
     """
     n_fft = int(2**np.ceil(np.log2(
