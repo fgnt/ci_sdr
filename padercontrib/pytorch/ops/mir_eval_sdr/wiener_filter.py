@@ -5,6 +5,9 @@ import torch
 
 from padercontrib.pytorch.ops.mir_eval_sdr.toeplitz import toeplitz
 
+if not hasattr(torch, 'solve'):
+    torch.solve = torch.gesv
+
 
 def complex_mul(x, y, conj_x=False):
     """
