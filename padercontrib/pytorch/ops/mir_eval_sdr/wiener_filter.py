@@ -75,12 +75,12 @@ def pt_wiener_filter_predict(observation, desired, filter_length, return_w=False
     >>> x = np.array([[1, 2, 3, 4, 5.], [1, 2, 1, 2, 1.]])
     >>> y = np.array([1, 2, 1, 2, 1.])
     >>> pprint(_project(x, y, 2))
-    array([1., 2., 1., 2., 1., 0.])
+    array([ 1.,  2.,  1.,  2.,  1., -0.])
     >>> pprint(np_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2))
     array([1., 2., 1., 2., 1., 0.])
     >>> pprint(np_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True))
-    array([[0., 0.],
-           [1., 0.]])
+    array([[ 0., -0.],
+           [ 1.,  0.]])
     >>> pprint(np.asarray(pt_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)))
     array([[0., 0.],
            [1., 0.]])
