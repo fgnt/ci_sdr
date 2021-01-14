@@ -20,21 +20,21 @@ def stack_history(x, length, cut=True, flip=False):
     return out
 
 
-def np_brute_force_autocorrelate(x, length):
+def brute_force_autocorrelate(x, length):
     """
     >>> a = np.linspace(0, 1)
-    >>> np_brute_force_autocorrelate(a, 4)
+    >>> brute_force_autocorrelate(a, 4)
     array([16.83673469, 16.32653061, 15.81674302, 15.30778842])
     """
     assert length > 0, length
     return np.flip(np.sum(x[..., None] * stack_history(x, length).conj(), axis=-2), axis=-1)
 
 
-def np_brute_force_crosscorrelate(x, y, length):
+def brute_force_crosscorrelate(x, y, length):
     """
     >>> x = np.linspace(0, 1)
     >>> y = np.logspace(0, 1)
-    >>> np_brute_force_crosscorrelate(x, y, 4)
+    >>> brute_force_crosscorrelate(x, y, 4)
     array([134.68100035, 130.67979405, 126.69997781, 122.74258078])
     """
     assert length > 1, length
@@ -43,11 +43,11 @@ def np_brute_force_crosscorrelate(x, y, length):
                axis=-2), axis=-1)
 
 
-def np_fft_autocorrelate(x, length):
+def fft_autocorrelate(x, length):
     """
 
     >>> a = np.linspace(0, 1)
-    >>> np_fft_autocorrelate(a, 4)
+    >>> fft_autocorrelate(a, 4)
     array([16.83673469, 16.32653061, 15.81674302, 15.30778842])
     """
     len1 = x.shape[-1]
@@ -58,11 +58,11 @@ def np_fft_autocorrelate(x, length):
     return np.fft.irfft(X.conj() * X)[:length]
 
 
-def np_fft_crosscorrelate(x, y, length):
+def fft_crosscorrelate(x, y, length):
     """
     >>> x = np.linspace(0, 1)
     >>> y = np.logspace(0, 1)
-    >>> np_fft_crosscorrelate(x, y, 4)
+    >>> fft_crosscorrelate(x, y, 4)
     array([134.68100035, 130.67979405, 126.69997781, 122.74258078])
     """
     len1 = x.shape[-1]
@@ -74,7 +74,7 @@ def np_fft_crosscorrelate(x, y, length):
     return np.fft.irfft(X.conj() * Y)[:length]
 
 
-def np_wiener_filter_predict(observation, desired, filter_order, return_w=False):
+def wiener_filter_predict(observation, desired, filter_order, return_w=False):
     """
     Also known as projection of observation to desired
     (mir_eval.separation._project)
@@ -89,19 +89,19 @@ def np_wiener_filter_predict(observation, desired, filter_order, return_w=False)
     >>> _project(x[None], y, 2)
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
-    >>> np_wiener_filter_predict(x, y, 2)
+    >>> wiener_filter_predict(x, y, 2)
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
-    >>> np_wiener_filter_predict(np.array([x]), y, 2)
+    >>> wiener_filter_predict(np.array([x]), y, 2)
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
-    >>> np_wiener_filter_predict(np.array([x, -x]), y, 2)
+    >>> wiener_filter_predict(np.array([x, -x]), y, 2)
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
     >>> _project(np.array([x, -x]), y, 2)
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
-    >>> pprint(np_wiener_filter_predict(np.array([x, y]), y, 2))
+    >>> pprint(wiener_filter_predict(np.array([x, y]), y, 2))
     array([1., 2., 1., 2., 1., 0.])
     >>> pprint(_project(np.array([x, y]), y, 2))
     array([ 1.,  2.,  1.,  2.,  1., -0.])
