@@ -1,7 +1,7 @@
 import torch
 
 
-def toeplitz(c, r=None):
+def toeplitz(c: torch.tensor, r: torch.tensor = None):
     """
     This function is similar to scipy.linalg.toeplitz, except for that not
     flatten is permormed on `c` and `r`. Instead these dimensions are handled
@@ -81,7 +81,6 @@ def toeplitz(c, r=None):
     assert r.shape[:-1] == c.shape[:-1], (r.shape, c.shape)
 
     vals = torch.cat((torch.flip(r[..., 1:], (-1,)), c), -1)
-    # return vals
     stride = list(vals.stride())
     return torch.transpose(torch.flip(vals.as_strided(
         size=(*vals.shape[:-1], r.shape[-1], c.shape[-1]),
