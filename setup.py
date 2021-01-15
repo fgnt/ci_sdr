@@ -54,7 +54,7 @@ setup(
             # pip has problems, because padertorch uses http.
             # 'paderbox @ git+https://github.com/fgnt/paderbox',
             'padertorch @ git+https://github.com/fgnt/padertorch',
-            'pb_bss @ git+https://github.com/fgnt/padertorch',
+            'pb_bss @ git+https://github.com/fgnt/pb_bss',
         ],
     },
     # package_data={
