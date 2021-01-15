@@ -59,7 +59,6 @@ def ci_sdr(
 
     >>> import numpy as np
     >>> import paderbox as pb
-    >>> import sms_wsj.database
 
     >>> from paderbox.testing.testfile_fetcher import fetch_file_from_url
 
