@@ -13,13 +13,13 @@ def soft_max_SDR_to_eps(soft_max_SDR):
 
 def linear_to_db(numerator, denominator, eps=None):
     """
-    >>> linear_to_db(torch.tensor(100), torch.tensor(1))
+    >>> linear_to_db(torch.tensor(100.), torch.tensor(1.))
     tensor(20.)
-    >>> linear_to_db(torch.tensor(100), torch.tensor(1), soft_max_SDR_to_eps(10))
+    >>> linear_to_db(torch.tensor(100.), torch.tensor(1.), soft_max_SDR_to_eps(10))
     tensor(9.5861)
-    >>> linear_to_db(torch.tensor(100), torch.tensor(1), soft_max_SDR_to_eps(20))
+    >>> linear_to_db(torch.tensor(100.), torch.tensor(1.), soft_max_SDR_to_eps(20))
     tensor(16.9897)
-    >>> linear_to_db(torch.tensor(100), torch.tensor(1), soft_max_SDR_to_eps(100))
+    >>> linear_to_db(torch.tensor(100.), torch.tensor(1.), soft_max_SDR_to_eps(100))
     tensor(20.)
 
     """
