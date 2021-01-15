@@ -38,7 +38,10 @@ def ci_sdr(
         filter_length=512,
         soft_max_SDR=None,
 ):
-    """
+    """Convolutive transfer function Invariant Signal-to-Distortion Ratio
+
+    With the default arguments, this functions returns the same value as the
+    SDR from `mir_eval.separation.bss_eval_sources`.
 
     Args:
         reference: source x samples
@@ -64,33 +67,39 @@ def ci_sdr(
     >>> estimation = ex['audio_data']['speech_image'][:, 0, :]
     >>> reference.shape, estimation.shape
     ((2, 87663), (2, 87663))
+    >>> reference_pt = torch.as_tensor(reference)
+    >>> estimation_pt = torch.as_tensor(estimation)
 
     >>> import pb_bss
     >>> pb_bss.evaluation.mir_eval_sources(reference, estimation)[0]
     array([11.21430422, 12.10953126])
-    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation))
+    >>> ci_sdr(reference_pt, estimation_pt)
     tensor([11.2143, 12.1095], dtype=torch.float64)
-    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation), compute_permutation=True)
+    >>> ci_sdr(reference_pt, estimation_pt, compute_permutation=True)
     tensor([11.2143, 12.1095], dtype=torch.float64)
-    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation[[0, 1]]), compute_permutation=False)
+    >>> ci_sdr(reference_pt, estimation_pt[[0, 1]], compute_permutation=False)
     tensor([11.2143, 12.1095], dtype=torch.float64)
-    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation[[0, 1]]), compute_permutation=True)
+    >>> ci_sdr(reference_pt, estimation_pt[[1, 0]], compute_permutation=False)
+    tensor([-18.2504, -19.8397], dtype=torch.float64)
+    >>> ci_sdr(reference_pt, estimation_pt[[0, 1]], compute_permutation=True)
     tensor([11.2143, 12.1095], dtype=torch.float64)
-    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation[[0, 1]]), compute_permutation=True, change_sign=True)
+    >>> ci_sdr(reference_pt, estimation_pt[[1, 0]], compute_permutation=True)
+    tensor([11.2143, 12.1095], dtype=torch.float64)
+    >>> ci_sdr(reference_pt, estimation_pt[[0, 1]], compute_permutation=True, change_sign=True)
     tensor([-11.2143, -12.1095], dtype=torch.float64)
 
-    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation), soft_max_SDR=20)
+    >>> ci_sdr(reference_pt, estimation_pt, soft_max_SDR=20)
     tensor([10.6748, 11.4555], dtype=torch.float64)
-    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(reference), soft_max_SDR=20)
+    >>> ci_sdr(reference_pt, reference_pt, soft_max_SDR=20)
     tensor([20., 20.], dtype=torch.float64)
-    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(reference), soft_max_SDR=None)
+    >>> ci_sdr(reference_pt, reference_pt, soft_max_SDR=None)
     tensor([295.1350, 269.7644], dtype=torch.float64)
 
     >>> estimation = ex['audio_data']['observation'][:2]
     >>> pb_bss.evaluation.mir_eval_sources(reference, estimation)[0]
     array([-0.26370129, -0.57722483])
     >>> e = torch.tensor(estimation, requires_grad=True)
-    >>> sdr = ci_sdr(torch.as_tensor(reference), e)
+    >>> sdr = ci_sdr(reference_pt, e)
     >>> sdr
     tensor([-0.2637, -0.5772], dtype=torch.float64, grad_fn=<StackBackward>)
     >>> sdr.sum().backward()
@@ -99,6 +108,27 @@ def ci_sdr(
              -9.6265e-04,  3.0609e-04],
             [ 1.7144e-05,  6.1831e-04, -3.0613e-04,  ...,  5.1454e-05,
              -6.0106e-05,  2.1169e-04]], dtype=torch.float64)
+
+    Comparison with si_sdr and sdr. Note, we must change reference to a
+    reverberated signal (speech_image), otherwise we get very bad values for
+    both objectives.
+
+    >>> reference = ex['audio_data']['speech_image'][(0, 1), (0, 1), :]
+    >>> estimation = ex['audio_data']['observation'][:2, :] + reference
+    >>> reference.shape, estimation.shape
+    ((2, 87663), (2, 87663))
+    >>> reference_pt = torch.as_tensor(reference)
+    >>> estimation_pt = torch.as_tensor(estimation)
+
+    >>> from padertorch.ops.losses.regression import sdr_loss, si_sdr_loss
+    >>> si_sdr_loss(estimation_pt, reference_pt, reduction=None)
+    tensor([-6.2903, -6.0337], dtype=torch.float64)
+    >>> ci_sdr(reference_pt, estimation_pt, soft_max_SDR=None, filter_length=1, change_sign=True)
+    tensor([-6.2903, -6.0337], dtype=torch.float64)
+    >>> sdr_loss(estimation_pt, reference_pt, reduction=None)  # There is a scale missmatch
+    tensor([2.8492, 2.9673], dtype=torch.float64)
+    >>> ci_sdr(reference_pt, estimation_pt, soft_max_SDR=None, filter_length=0, change_sign=True)
+    tensor([2.8492, 2.9673], dtype=torch.float64)
 
     """
     K, num_samples = reference.shape
@@ -134,17 +164,20 @@ def ci_sdr(
 
     scores = []
     for k in range(K):
-        reverberated = wiener_filter_predict_single_input(
-            reference[k], estimation[k], filter_length=filter_length)
-
         est = estimation[k]
-        est = torch.nn.functional.pad(est, [0, filter_length-1])
-        # [...,: reference.shape[-1]]
+
+        if filter_length != 0:
+            reverberated = wiener_filter_predict_single_input(
+                reference[k], estimation[k], filter_length=filter_length)
+            est = torch.nn.functional.pad(est, [0, filter_length-1])
+        else:
+            reverberated = reference[k]
 
         num = torch.sum(reverberated**2)
         den = torch.sum((reverberated - est)**2)
 
         scores.append(linear_to_db(num, den, eps=soft_max_SDR_to_eps(soft_max_SDR)))
+
     if change_sign:
         return -torch.stack(scores)
     else:
