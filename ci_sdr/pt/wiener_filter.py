@@ -279,7 +279,7 @@ def wiener_filter_predict_single_input(
         w = argmin_w ( sum( |(x * w)_t - d_t|^2 ) )
         return x * w
 
-    >>> from padercontrib.pytorch.ops.mir_eval_sdr.np_wiener_filter import np_wiener_filter_predict
+    >>> from ci_sdr.np.wiener_filter import wiener_filter_predict as np_wiener_filter_predict
     >>> x = np.array([1, 2, 3, 4, 5.])
     >>> y = np.array([1, 2, 1, 2, 1.])
     >>> from mir_eval.separation import _project
@@ -305,9 +305,6 @@ def wiener_filter_predict_single_input(
     >>> np.testing.assert_allclose(filter_est, filter, rtol=5e-3, atol=5e-3)
 
     """
-    import torch
-    from padercontrib.pytorch.ops.mir_eval_sdr.toeplitz import toeplitz
-
     assert len(observation.shape) == 1, observation.shape
 
     observation_length = observation.shape[-1]

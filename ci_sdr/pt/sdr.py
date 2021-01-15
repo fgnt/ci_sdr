@@ -58,7 +58,6 @@ def ci_sdr(
         SDR values for each source
 
     >>> import numpy as np
-    >>> import padercontrib as pc
     >>> import paderbox as pb
     >>> import sms_wsj.database
 
