@@ -30,7 +30,7 @@ def linear_to_db(numerator, denominator, eps=None):
         return -10 * torch.log10(denominator / numerator + eps)
 
 
-def py_mir_eval_sdr(
+def ci_sdr(
         reference,  # K x T
         estimation,  # K x T
         compute_permutation=False,
@@ -68,29 +68,29 @@ def py_mir_eval_sdr(
     >>> import pb_bss
     >>> pb_bss.evaluation.mir_eval_sources(reference, estimation)[0]
     array([11.21430422, 12.10953126])
-    >>> py_mir_eval_sdr(torch.as_tensor(reference), torch.as_tensor(estimation))
+    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation))
     tensor([11.2143, 12.1095], dtype=torch.float64)
-    >>> py_mir_eval_sdr(torch.as_tensor(reference), torch.as_tensor(estimation), compute_permutation=True)
+    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation), compute_permutation=True)
     tensor([11.2143, 12.1095], dtype=torch.float64)
-    >>> py_mir_eval_sdr(torch.as_tensor(reference), torch.as_tensor(estimation[[0, 1]]), compute_permutation=False)
+    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation[[0, 1]]), compute_permutation=False)
     tensor([11.2143, 12.1095], dtype=torch.float64)
-    >>> py_mir_eval_sdr(torch.as_tensor(reference), torch.as_tensor(estimation[[0, 1]]), compute_permutation=True)
+    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation[[0, 1]]), compute_permutation=True)
     tensor([11.2143, 12.1095], dtype=torch.float64)
-    >>> py_mir_eval_sdr(torch.as_tensor(reference), torch.as_tensor(estimation[[0, 1]]), compute_permutation=True, change_sign=True)
+    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation[[0, 1]]), compute_permutation=True, change_sign=True)
     tensor([-11.2143, -12.1095], dtype=torch.float64)
 
-    >>> py_mir_eval_sdr(torch.as_tensor(reference), torch.as_tensor(estimation), soft_max_SDR=20)
+    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(estimation), soft_max_SDR=20)
     tensor([10.6748, 11.4555], dtype=torch.float64)
-    >>> py_mir_eval_sdr(torch.as_tensor(reference), torch.as_tensor(reference), soft_max_SDR=20)
+    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(reference), soft_max_SDR=20)
     tensor([20., 20.], dtype=torch.float64)
-    >>> py_mir_eval_sdr(torch.as_tensor(reference), torch.as_tensor(reference), soft_max_SDR=None)
+    >>> ci_sdr(torch.as_tensor(reference), torch.as_tensor(reference), soft_max_SDR=None)
     tensor([295.1350, 269.7644], dtype=torch.float64)
 
     >>> estimation = ex['audio_data']['observation'][:2]
     >>> pb_bss.evaluation.mir_eval_sources(reference, estimation)[0]
     array([-0.26370129, -0.57722483])
     >>> e = torch.tensor(estimation, requires_grad=True)
-    >>> sdr = py_mir_eval_sdr(torch.as_tensor(reference), e)
+    >>> sdr = ci_sdr(torch.as_tensor(reference), e)
     >>> sdr
     tensor([-0.2637, -0.5772], dtype=torch.float64, grad_fn=<StackBackward>)
     >>> sdr.sum().backward()
@@ -120,7 +120,7 @@ def py_mir_eval_sdr(
         #    cuda sync point, hence it is a tradeoff
         for permutation in permutations:
             indexer[axis] = permutation
-            candidates.append(py_mir_eval_sdr(
+            candidates.append(ci_sdr(
                 reference,
                 estimation[tuple(indexer)],
                 change_sign=False,
