@@ -153,12 +153,14 @@ def wiener_filter_predict(
     array([1., 2., 1., 2., 1., 0.])
     >>> pprint(np_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2))
     array([1., 2., 1., 2., 1., 0.])
-    >>> pprint(np_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True))
-    array([[0., 0.],
-           [1., 0.]])
-    >>> pprint(np.asarray(wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)))
-    array([[0., 0.],
-           [1., 0.]])
+    >>> np.testing.assert_allclose(
+    ...     np_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True),
+    ...     [[0., 0.],
+    ...      [1., 0.]], atol=1e-15, rtol=1e-15)
+    >>> np.testing.assert_allclose(
+    ...     np.asarray(wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)),
+    ...     [[0., 0.],
+    ...      [1., 0.]], atol=1e-15, rtol=1e-15)
     >>> pprint(np.asarray(wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2)))
     array([ 1.,  2.,  1.,  2.,  1., -0.])
 
