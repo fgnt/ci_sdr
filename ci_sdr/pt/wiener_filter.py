@@ -40,6 +40,10 @@ def complex_mul(x, y, conj_x=False):
 
 def rfft(signal, n_fft, _native_complex=_native_complex):
     """
+    >>> import pytest
+    >>> if not torch.__version__.startswith('1.7.'):
+    ...     pytest.skip(f'This doctest only works with torch 1.7, but your version is: {torch.__version__}')
+
     >>> t = torch.tensor([1., 2, 3, 4])
     >>> rfft(t, 4, False)
     tensor([[10.,  0.],
