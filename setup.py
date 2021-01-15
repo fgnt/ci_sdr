@@ -44,11 +44,15 @@ setup(
     # keywords='sample, setuptools, development',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     python_requires='>=3.6, <4',
-    install_requires=['numpy'],
-    # extras_require={
-    #     'dev': ['check-manifest'],
-    #     'test': ['coverage'],
-    # },
+    install_requires=['numpy', 'torch'],
+    extras_require={
+        'all': [
+            'pytest',
+            'soundFile',
+            'paderbox @ git+https://github.com/fgnt/paderbox',
+            'padertorch @ git+https://github.com/fgnt/padertorch',
+        ],
+    },
     # package_data={
     #     'sample': ['package_data.dat'],
     # },
