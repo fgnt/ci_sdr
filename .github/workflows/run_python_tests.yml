@@ -38,6 +38,7 @@ jobs:
         echo $TORCH_INSTALL
         pip install $TORCH_INSTALL
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install numpy scipy Cython
         pip install .[all]
     - name: Lint with flake8
       run: |
