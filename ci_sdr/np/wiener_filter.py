@@ -82,7 +82,7 @@ def wiener_filter_predict(observation, desired, filter_order, return_w=False):
     w = argmin_w ( sum( |x * w - d|^2 ) )
     return x * w
 
-    >>> from paderbox.notebook import pprint
+    >>> from paderbox.utils.pretty import pprint
     >>> x = np.array([1, 2, 3, 4, 5])
     >>> y = np.array([1, 2, 1, 2, 1])
     >>> from mir_eval.separation import _project
