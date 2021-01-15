@@ -123,7 +123,7 @@ def wiener_filter_predict(
         observation convolved with w, where w is:
             w = argmin_t ( sum_t( |x_t * w - d_t|^2 ) )
 
-    >>> from paderbox.notebook import pprint
+    >>> from paderbox.utils.pretty import pprint
     >>> from ci_sdr.np.wiener_filter import wiener_filter_predict as np_wiener_filter_predict
     >>> x = np.array([1, 2, 3, 4, 5.])
     >>> y = np.array([1, 2, 1, 2, 1.])
