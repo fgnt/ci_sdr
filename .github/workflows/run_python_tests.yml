@@ -29,18 +29,14 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       env:
-        TORCH_INSTALL: ${{ matrix.pytorch-version }}
+        TORCH_INSTALL: ${{ matrix.pytorch-install }}
       run: |
         # Print cmd before executing
         trap 'echo -e "$ $BASH_COMMAND"' DEBUG
         python -m pip install --upgrade pip
         pip install flake8 pytest pytest-cov codecov
+        echo $TORCH_INSTALL
         pip install $TORCH_INSTALL
-        if [ $TORCH_VERSION == "nightly" ]; then
-          pip install --pre torch -f https://download.pytorch.org/whl/torch_nightly.html
-        else
-          pip install torch==$TORCH_VERSION torchvision==0.8.2+cpu torchaudio==0.7.2 -f https://download.pytorch.org/whl/torch_stable.html
-        fi
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .[all]
     - name: Lint with flake8
