@@ -1,12 +1,21 @@
+from distutils.version import LooseVersion
+
 import numpy as np
 import einops
 
 import torch
 
-from padercontrib.pytorch.ops.mir_eval_sdr.toeplitz import toeplitz
+from ci_sdr.pt.toeplitz import toeplitz
 
-if not hasattr(torch, 'solve'):
+if not hasattr(torch, 'solve'):  # torch <= 1.0.0
     torch.solve = torch.gesv
+
+# torch 1.7 introduces numpy compatible torch.fft module, while
+# it was earlier a function.
+# The old functions expect a real tensor as input, where the last dimension
+# has 2 entries for the real and imag part.
+# The new functions use the native complex support from torch.
+_native_complex = LooseVersion(torch.__version__) >= "1.7.0"
 
 
 def complex_mul(x, y, conj_x=False):
@@ -29,34 +38,93 @@ def complex_mul(x, y, conj_x=False):
         return torch.stack([a * c - b * d, b * c + a * d], -1)
 
 
-def rfft(signal, n_fft):
-    signal = torch.nn.functional.pad(
-        signal, [0, n_fft - signal.shape[-1]])
-    return torch.rfft(signal, 1)
+def rfft(signal, n_fft, _native_complex=_native_complex):
+    """
+    >>> t = torch.tensor([1., 2, 3, 4])
+    >>> rfft(t, 4, False)
+    tensor([[10.,  0.],
+            [-2.,  2.],
+            [-2.,  0.]])
+    >>> rfft(t, 8, False)
+    tensor([[10.0000,  0.0000],
+            [-0.4142, -7.2426],
+            [-2.0000,  2.0000],
+            [ 2.4142, -1.2426],
+            [-2.0000,  0.0000]])
+    >>> rfft(t, 4, True)
+    tensor([10.+0.j, -2.+2.j, -2.+0.j])
+    >>> rfft(t, 8, True)
+    tensor([10.0000+0.0000j, -0.4142-7.2426j, -2.0000+2.0000j,  2.4142-1.2426j,
+            -2.0000+0.0000j])
+
+    >>> irfft(rfft(t, 4), 4)
+    tensor([1., 2., 3., 4.])
+    >>> irfft(rfft(t, 8), 8)
+    tensor([1.0000e+00, 2.0000e+00, 3.0000e+00, 4.0000e+00, 0.0000e+00, 1.1921e-07,
+            0.0000e+00, 1.1921e-07])
+    >>> irfft(rfft(t, 4, True), 4, True)
+    tensor([1., 2., 3., 4.])
+    >>> irfft(rfft(t, 8, True), 8, True)
+    tensor([1.0000e+00, 2.0000e+00, 3.0000e+00, 4.0000e+00, 0.0000e+00, 1.1921e-07,
+            0.0000e+00, 1.1921e-07])
+    """
+    import torch
+    if _native_complex:
+        import torch.fft
+        return torch.fft.rfft(signal, n_fft)
+    else:
+        signal = torch.nn.functional.pad(
+            signal, [0, n_fft - signal.shape[-1]])
+        return torch.rfft(signal, 1)
 
 
-def irfft(signal, n_fft):
-    # signal_sizes shouldn't be nessesary, but torch.irfft has a bug,
-    # that it calculates only the correct inverse, when signal_sizes is
-    # given. Since this strange behaviour is documented in the pytorch
-    # documentation I do not open a PR.
-    # Assumption: In image processing you have not optimal sizes, so they
-    #             introduced signal_sizes. And since they cannot use
-    #             fft without signal_sizes, they didn't cared about the
-    #             default behaviour.
-    return torch.irfft(signal, 1, signal_sizes=(n_fft,))
+def irfft(signal, n_fft, _native_complex=_native_complex):
+    import torch
+    if _native_complex:
+        import torch.fft
+        return torch.fft.irfft(signal, n_fft)
+    else:
+        # signal_sizes shouldn't be nessesary, but torch.irfft has a bug,
+        # that it calculates only the correct inverse, when signal_sizes is
+        # given. Since this strange behaviour is documented in the pytorch
+        # documentation I do not open a PR.
+        # Assumption: In image processing you have not optimal sizes, so they
+        #             introduced signal_sizes. And since they cannot use
+        #             fft without signal_sizes, they didn't cared about the
+        #             default behaviour.
+        return torch.irfft(signal, 1, signal_sizes=(n_fft,))
 
 
-def pt_wiener_filter_predict(observation, desired, filter_length, return_w=False):
+def wiener_filter_predict(
+        observation,
+        desired,
+        filter_length,
+        return_w=False,
+        _native_complex=_native_complex,
+):
     """
     Also known as projection of observation to desired
     (mir_eval.separation._project)
 
-    w = argmin_w ( sum( |x * w - d|^2 ) )
-    return x * w
+    Args:
+        observation: multi dimensional input with shape: [dim, time]
+        desired: the desired signal with shape [time]
+        filter_length: Filter legth of "w"
+        return_w: If True, return the filter coefficients instead of the
+            filtered signal.
+        _native_complex:
+            Implementation detail: Whether to use naitive complex support from
+            torch.
+            torch < 1.7: Has no complex support
+            torch == 1.7: Supports old style and complex
+            torch > 1.7: Droppt support for non native call
+
+    Returns:
+        observation convolved with w, where w is:
+            w = argmin_t ( sum_t( |x_t * w - d_t|^2 ) )
 
     >>> from paderbox.notebook import pprint
-    >>> from padercontrib.pytorch.ops.mir_eval_sdr.np_wiener_filter import np_wiener_filter_predict
+    >>> from ci_sdr.np.wiener_filter import wiener_filter_predict as np_wiener_filter_predict
     >>> x = np.array([1, 2, 3, 4, 5.])
     >>> y = np.array([1, 2, 1, 2, 1.])
     >>> from mir_eval.separation import _project
@@ -69,25 +137,25 @@ def pt_wiener_filter_predict(observation, desired, filter_length, return_w=False
     >>> np_wiener_filter_predict(x, y, 2, return_w=True)
     array([[ 0.41754386, -0.04912281]])
 
-    >>> pt_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)
+    >>> wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)
     tensor([[ 0.4175, -0.0491]], dtype=torch.float64)
-    >>> np.asarray(pt_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2))
+    >>> np.asarray(wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2))
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
 
     >>> x = np.array([[1, 2, 3, 4, 5.], [1, 2, 1, 2, 1.]])
     >>> y = np.array([1, 2, 1, 2, 1.])
     >>> pprint(_project(x, y, 2))
-    array([ 1.,  2.,  1.,  2.,  1., -0.])
+    array([1., 2., 1., 2., 1., 0.])
     >>> pprint(np_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2))
     array([1., 2., 1., 2., 1., 0.])
     >>> pprint(np_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True))
     array([[0., 0.],
            [1., 0.]])
-    >>> pprint(np.asarray(pt_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)))
+    >>> pprint(np.asarray(wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)))
     array([[0., 0.],
            [1., 0.]])
-    >>> pprint(np.asarray(pt_wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2)))
+    >>> pprint(np.asarray(wiener_filter_predict(torch.as_tensor(x), torch.as_tensor(y), 2)))
     array([ 1.,  2.,  1.,  2.,  1., -0.])
 
     """
@@ -100,17 +168,20 @@ def pt_wiener_filter_predict(observation, desired, filter_length, return_w=False
         observation_length + desired.shape[-1] - 1.
     )))
 
+    Observation = rfft(observation, n_fft=n_fft, _native_complex=_native_complex)
+    Desired = rfft(desired, n_fft=n_fft, _native_complex=_native_complex)
 
-    Observation = rfft(observation, n_fft=n_fft)
-    Desired = rfft(desired, n_fft=n_fft)
-
-    assert Observation.shape[-1] == 2, Observation.shape
-    assert len(Observation.shape[:-1]) == len(observation.shape), (Observation.shape, observation.shape)
+    if not _native_complex:
+        assert Observation.shape[-1] == 2, Observation.shape
+        assert len(Observation.shape[:-1]) == len(observation.shape), (Observation.shape, observation.shape)
 
     # Autocorr = np.einsum('KT,kT->KkT', Observation.conj(), Observation)
-    Autocorr = complex_mul(Observation[:, None, :], Observation[None, :, :], conj_x=True)
+    if _native_complex:
+        Autocorr = Observation[:, None, :].conj() * Observation[None, :, :]
+    else:
+        Autocorr = complex_mul(Observation[:, None, :], Observation[None, :, :], conj_x=True)
 
-    autocorr = irfft(Autocorr, n_fft=n_fft)
+    autocorr = irfft(Autocorr, n_fft=n_fft, _native_complex=_native_complex)
     R = toeplitz(autocorr[..., :filter_length])
     R = einops.rearrange(
         R, 'source1 source2 filter1 filter2 -> (source1 filter1) (source2 filter2)',
@@ -121,8 +192,12 @@ def pt_wiener_filter_predict(observation, desired, filter_length, return_w=False
     )
 
     # Crosscorr = np.einsum('KT,T->KT', Observation.conj(), Desired)
-    Crosscorr = complex_mul(Observation, Desired, conj_x=True)
-    crosscorr = irfft(Crosscorr, n_fft=n_fft)
+    if _native_complex:
+        Crosscorr = Observation.conj() * Desired
+    else:
+        Crosscorr = complex_mul(Observation, Desired, conj_x=True)
+    crosscorr = irfft(Crosscorr, n_fft=n_fft, _native_complex=_native_complex)
+
     p = crosscorr[..., :filter_length]
     p = einops.rearrange(p, 'source filter -> (source filter)')
 
@@ -139,21 +214,70 @@ def pt_wiener_filter_predict(observation, desired, filter_length, return_w=False
         return w
     else:
         # This pads to much, but it allows us to reuse the fft of observation
-        W = rfft(w, n_fft=n_fft)
+        W = rfft(w, n_fft=n_fft, _native_complex=_native_complex)
+
+        if _native_complex:
+            estimate = Observation * W
+        else:
+            estimate = complex_mul(Observation, W)
 
         return irfft(
-            torch.sum(complex_mul(Observation, W), dim=0), n_fft=n_fft
+            torch.sum(estimate, dim=0), n_fft=n_fft, _native_complex=_native_complex,
         )[..., :observation_length + filter_length - 1]
 
+        # return irfft(
+        #     torch.sum(complex_mul(Observation, W), dim=0), n_fft=n_fft
+        # )[..., :observation_length + filter_length - 1]
 
-def pt_wiener_filter_predict_single_input(
-        observation, desired, filter_length, return_w=False):
+
+def wiener_filter_predict_single_input(
+        observation, desired, filter_length,
+        *,
+        first_filter_index=0,
+        return_w=False,
+        _native_complex=_native_complex,
+):
     """
+
     Also known as projection of observation to desired
     (mir_eval.separation._project)
 
-    w = argmin_w ( sum( |x * w - d|^2 ) )
-    return x * w
+                      ┌────────┐
+     x (observation)  │        │ y (returned)   ╭───╮       -d (desired)
+    ─────────────────>│   w    │───────────────>│ + │<──────────────────
+                      │        │                ╰───╯
+                      └────────┘                  │
+                                                  │ error (minimized)
+                                                  v
+
+    Args:
+        observation: signle dimensional input with shape: [time]
+        desired: the desired signal with shape [time]
+        filter_length: The length of the filter.
+        first_filter_index:
+            The first index of the filter.
+            0: Classical causal filter
+            negative: Non causal filter
+            positive: Not implemented
+        return_w:
+        _native_complex:
+            Implementation detail: Whether to use naitive complex support from
+            torch.
+            torch < 1.7: Has no complex support
+            torch == 1.7: Supports old style and complex
+            torch > 1.7: Droppt support for non native call
+
+    Returns: filterd signal with shape [time + filter_length - 1]
+
+        x: observation
+        d: desired
+        L: filter_length
+        S: first_filter_index
+
+        (x * w)_t := sum_{l=S}^{L-S-1} x_{t - l} * w_l
+
+        w = argmin_w ( sum( |(x * w)_t - d_t|^2 ) )
+        return x * w
 
     >>> from padercontrib.pytorch.ops.mir_eval_sdr.np_wiener_filter import np_wiener_filter_predict
     >>> x = np.array([1, 2, 3, 4, 5.])
@@ -168,11 +292,18 @@ def pt_wiener_filter_predict_single_input(
     >>> np_wiener_filter_predict(x, y, 2, return_w=True)
     array([[ 0.41754386, -0.04912281]])
 
-    >>> pt_wiener_filter_predict_single_input(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)
+    >>> wiener_filter_predict_single_input(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True)
     tensor([ 0.4175, -0.0491], dtype=torch.float64)
-    >>> np.asarray(pt_wiener_filter_predict_single_input(torch.as_tensor(x), torch.as_tensor(y), 2))
+    >>> np.asarray(wiener_filter_predict_single_input(torch.as_tensor(x), torch.as_tensor(y), 2))
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
+
+    >>> x = np.random.randn(400).astype(dtype=np.float64)
+    >>> filter = [1, -2]
+    >>> y = np.convolve(x, filter)[:1-len(filter)]
+    >>> filter_est = wiener_filter_predict_single_input(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True).numpy()
+    >>> np.testing.assert_allclose(filter_est, filter, rtol=5e-3, atol=5e-3)
+
     """
     import torch
     from padercontrib.pytorch.ops.mir_eval_sdr.toeplitz import toeplitz
@@ -185,31 +316,60 @@ def pt_wiener_filter_predict_single_input(
         observation_length + desired.shape[-1] - 1.
     )))
 
-    Observation = rfft(observation, n_fft=n_fft)
-    Desired = rfft(desired, n_fft=n_fft)
+    if first_filter_index == 0:
+        pass
+    elif first_filter_index < 0:
+        if first_filter_index + filter_length < 0:
+            raise NotImplementedError()
+        desired = torch.nn.functional.pad(
+            desired, [-first_filter_index, 0])
+    else:
+        observation = torch.nn.functional.pad(
+            observation, [first_filter_index, 0])
+        # raise NotImplementedError(first_filter_index)
 
-    assert Observation.shape[-1] == 2, Observation.shape
-    assert len(Observation.shape[:-1]) == len(observation.shape), (Observation.shape, observation.shape)
+    Observation = rfft(observation, n_fft=n_fft, _native_complex=_native_complex)
+    Desired = rfft(desired, n_fft=n_fft, _native_complex=_native_complex)
 
-    Autocorr = complex_mul(Observation, Observation, conj_x=True)
-    autocorr = irfft(Autocorr, n_fft=n_fft)
+    if not _native_complex:
+        assert Observation.shape[-1] == 2, Observation.shape
+        assert len(Observation.shape[:-1]) == len(observation.shape), (Observation.shape, observation.shape)
+
+    if _native_complex:
+        Autocorr = Observation.conj() * Observation
+    else:
+        Autocorr = complex_mul(Observation, Observation, conj_x=True)
+    autocorr = irfft(Autocorr, n_fft=n_fft, _native_complex=_native_complex)
     R = toeplitz(autocorr[..., :filter_length])
 
-    Crosscorr = complex_mul(Observation, Desired, conj_x=True)
-    crosscorr = irfft(Crosscorr, n_fft=n_fft)
+    if _native_complex:
+        Crosscorr = Observation.conj() * Desired
+    else:
+        Crosscorr = complex_mul(Observation, Desired, conj_x=True)
+    crosscorr = irfft(Crosscorr, n_fft=n_fft, _native_complex=_native_complex)
     p = crosscorr[..., :filter_length]
 
     # Note: The solve arguments are swapped in pytorch
     w, _ = torch.solve(p[..., None], R)
-    assert w.shape[-1] == 1, w.shape
-    w = w[..., 0]
+    w = torch.squeeze(w, -1)
+    # assert w.shape[-1] == 1, w.shape
+    # w = w[..., 0]
 
     if return_w:
         return w
     else:
         # This pads to much, but it allows us to reuse the fft of observation
-        W = rfft(w, n_fft=n_fft)
+        W = rfft(w, n_fft=n_fft, _native_complex=_native_complex)
 
-        return irfft(
-            complex_mul(Observation, W), n_fft=n_fft
-        )[..., :observation_length + filter_length - 1]
+        if _native_complex:
+            Est = Observation * W
+        else:
+            Est = complex_mul(Observation, W)
+
+        est = irfft(
+            Est, n_fft=n_fft, _native_complex=_native_complex
+        )
+        if first_filter_index <= 0:
+            return est[..., :observation_length + filter_length - 1]
+        else:
+            return est[..., first_filter_index: first_filter_index+observation_length + filter_length - 1]
