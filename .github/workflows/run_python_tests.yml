@@ -31,6 +31,8 @@ jobs:
       env:
         TORCH_INSTALL: ${{ matrix.pytorch-version }}
       run: |
+        # Print cmd before executing
+        trap 'echo -e "$ $BASH_COMMAND"' DEBUG
         python -m pip install --upgrade pip
         pip install flake8 pytest pytest-cov codecov
         pip install $TORCH_INSTALL
