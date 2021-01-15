@@ -49,7 +49,9 @@ setup(
         'all': [
             'pytest',
             'soundFile',
-            'paderbox @ git+https://github.com/fgnt/paderbox',
+            # paderbox is already in padertorch/setup.py.
+            # pip has problems, because padertorch uses http.
+            # 'paderbox @ git+https://github.com/fgnt/paderbox',
             'padertorch @ git+https://github.com/fgnt/padertorch',
         ],
     },
