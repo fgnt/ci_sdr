@@ -135,9 +135,9 @@ def wiener_filter_predict(observation, desired, filter_order, return_w=False):
     p = crosscorr[..., :filter_order]
     p = einops.rearrange(p, 'source filter -> (source filter)')
 
-    from nara_wpe.wpe import _stable_solve
+    from paderbox.math.solve import stable_solve
 
-    w = np.squeeze(_stable_solve(R, p[..., None]), axis=-1)
+    w = np.squeeze(stable_solve(R, p[..., None]), axis=-1)
     w = einops.rearrange(w, '(source filter) -> source filter', filter=filter_order)
 
     if return_w:
