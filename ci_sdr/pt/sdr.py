@@ -153,11 +153,16 @@ def ci_sdr(
     tensor([-9.9814, -9.4490], dtype=torch.float64)
     >>> ci_sdr(reference_pt, estimation_pt, soft_max_SDR=None, filter_length=0, change_sign=True)
     tensor([-9.9814, -9.4490], dtype=torch.float64)
-
     """
+
+    assert reference.shape == estimation.shape, (reference.shape, estimation.shape)
+    if len(reference.shape) == 1:
+        reference = reference[None, :]
+        estimation = estimation[None, :]
+
     K, num_samples = reference.shape
 
-    if compute_permutation:
+    if K > 1 and compute_permutation:
         # ToDo: Add option to use hungarian algorithm
         #       Note:
         #        - The hungarian algorithm cannot release intermediate tensors
@@ -178,9 +183,12 @@ def ci_sdr(
                 reference,
                 estimation[tuple(indexer)],
                 change_sign=False,
-                filter_length=filter_length, soft_max_SDR=soft_max_SDR
+                filter_length=filter_length, soft_max_SDR=soft_max_SDR,
+                compute_permutation=False,
             ))
-        sdr, idx = torch.max(torch.stack(candidates), dim=0)
+        candidates = torch.stack(candidates)
+        _, idx = torch.max(torch.sum(candidates, axis=1), dim=0)
+        sdr = candidates[idx]
         if change_sign:
             return -sdr
         else:
