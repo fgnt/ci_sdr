@@ -201,8 +201,11 @@ def ci_sdr(
 
     assert reference.shape == estimation.shape, (reference.shape, estimation.shape)
     if len(reference.shape) == 1:
+        single_source = True
         reference = reference[None, :]
         estimation = estimation[None, :]
+    else:
+        single_source = False
 
     K, num_samples = reference.shape
 
@@ -255,6 +258,11 @@ def ci_sdr(
         scores.append(linear_to_db(num, den, eps=soft_max_SDR_to_eps(soft_max_SDR)))
 
     if change_sign:
-        return -torch.stack(scores)
+        scores = -torch.stack(scores)
     else:
-        return torch.stack(scores)
+        scores = torch.stack(scores)
+
+    if single_source:
+        scores = torch.squeeze(scores, dim=0)
+
+    return scores
