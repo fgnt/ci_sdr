@@ -30,6 +30,44 @@ def linear_to_db(numerator, denominator, eps=None):
         return -10 * torch.log10(denominator / numerator + eps)
 
 
+def ci_sdr_loss(
+        estimation,  # K x T
+        reference,  # K x T
+        *,
+        compute_permutation=True,
+        filter_length=512,
+        soft_max_SDR=None,
+):
+    """Convolutive transfer function Invariant Signal-to-Distortion Ratio loss
+
+    Note:
+        To follow the pytorch convention, this function has as first argument
+        the estimation, while `ci_sdr` follows the convention for many metrics,
+        that use as first argument the reference.
+
+    The difference to ci_sdr are:
+     - Change the sign, so this function can be minimized by an NN to reach the
+       optimum.
+
+    Args:
+        estimation: source x samples
+        reference: source x samples
+        compute_permutation: If true, assume estimation source index is
+            permuted. Note mir_eval.separation.bss_eval_sources computes
+            the permutation based on the SIR, while this function computes the
+            permutation based on the SDR.
+        filter_length:
+        soft_max_SDR:
+
+    Returns:
+
+    """
+    return ci_sdr(
+        **locals(),
+        change_sign=True
+    )
+
+
 def ci_sdr(
         reference,  # K x T
         estimation,  # K x T
