@@ -1,0 +1,36 @@
+# Simple test, that checks, if `pip install .` installs all nessesary dependencies to execute
+# `ci_sdr.pt.ci_sdr(...)`
+
+name: Run python tests
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        # Print cmd before executing
+        trap 'echo -e "$ $BASH_COMMAND"' DEBUG
+        python -m pip install --upgrade pip
+        pip install pytest
+        pip install torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        pip install numpy scipy Cython
+        pip install .
+    - name: Test with pytest
+      run: |
+        pytest tests/test_burn.py
+      env:
+        OMP_NUM_THREADS: 1
+        MKL_NUM_THREADS: 1
