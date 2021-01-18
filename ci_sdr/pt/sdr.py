@@ -166,7 +166,7 @@ def ci_sdr(
     >>> e = torch.tensor(estimation, requires_grad=True)
     >>> sdr = ci_sdr(reference_pt, e)
     >>> sdr
-    tensor([ 1.8330, -2.7986], dtype=torch.float64, grad_fn=<StackBackward>)
+    tensor([ 1.8330, -2.7986], dtype=torch.float64, grad_fn=<SelectBackward>)
     >>> sdr.sum().backward()
     >>> e.grad
     tensor([[-2.7294e-06, -5.2814e-06, -3.2224e-05,  ..., -8.6633e-05,
