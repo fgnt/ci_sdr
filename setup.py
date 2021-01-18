@@ -44,7 +44,11 @@ setup(
     # keywords='sample, setuptools, development',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     python_requires='>=3.6, <4',
-    install_requires=['numpy', 'torch'],
+    install_requires=[
+        'numpy',
+        'torch',
+        'einops',
+    ],
     extras_require={
         'all': [
             'pytest',
