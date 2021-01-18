@@ -33,7 +33,8 @@ def linear_to_db(numerator, denominator, eps=None):
 def ci_sdr(
         reference,  # K x T
         estimation,  # K x T
-        compute_permutation=False,
+        *,
+        compute_permutation=True,
         change_sign=False,
         filter_length=512,
         soft_max_SDR=None,
@@ -53,6 +54,8 @@ def ci_sdr(
         change_sign:
             When True, assume this function is used as loss and return `-SDR`
             instead of `SDR`.
+        filter_length:
+        soft_max_SDR: ToDo: Was it first proposed in mixture of mixture?
 
     Returns:
         SDR values for each source
