@@ -304,11 +304,11 @@ def wiener_filter_predict_single_input(
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
 
-    >>> x = np.random.randn(400).astype(dtype=np.float64)
+    >>> x = np.random.RandomState(0).randn(400).astype(dtype=np.float64)
     >>> filter = [1, -2]
     >>> y = np.convolve(x, filter)[:1-len(filter)]
     >>> filter_est = wiener_filter_predict_single_input(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True).numpy()
-    >>> np.testing.assert_allclose(filter_est, filter, rtol=5e-3, atol=5e-3)
+    >>> np.testing.assert_allclose(filter_est, [1.000079, -1.996279], atol=1e-6)
 
     """
     assert len(observation.shape) == 1, observation.shape
