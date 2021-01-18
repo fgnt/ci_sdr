@@ -3,7 +3,7 @@ import ci_sdr
 
 
 def test_burn_single_source():
-    t1 = torch.tensor([1, 2, 4, 7, 1, 3, 7, 8, 0, 3, 4])
+    t1 = torch.tensor([1., 2, 4, 7, 1, 3, 7, 8, 0, 3, 4])
     t2 = torch.clone(t1)
     t2[:4] += 2
 
@@ -14,8 +14,8 @@ def test_burn_single_source():
 
 def test_burn_multi_source():
     t1 = torch.tensor([
-        [1, 2, 4, 7, 1, 3, 7, 8, 0, 3, 4],
-        [5, 2, 7, 9, 3, 8, 4, 2, 9, 4, 5],
+        [1., 2, 4, 7, 1, 3, 7, 8, 0, 3, 4],
+        [5., 2, 7, 9, 3, 8, 4, 2, 9, 4, 5],
     ])
     t2 = torch.clone(t1)
     t2[:, :4] += 2
