@@ -22,6 +22,12 @@ def linear_to_db(numerator, denominator, eps=None):
     >>> linear_to_db(torch.tensor(100.), torch.tensor(1.), soft_max_SDR_to_eps(100))
     tensor(20.)
 
+    >>> import numpy as np
+    >>> linear_to_db(torch.tensor(1.), torch.tensor(np.finfo(np.float64).eps))
+    tensor(156.5356, dtype=torch.float64)
+    >>> linear_to_db(torch.tensor(1.), torch.tensor(np.finfo(np.float32).eps))
+    tensor(69.2369)
+
     """
     assert denominator > 0, denominator
     if eps is None:

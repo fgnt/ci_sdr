@@ -83,8 +83,11 @@ def test_vs_mir_eval():
     estimation = data.speech_source
     mir_eval_sdr = pb_bss.evaluation.mir_eval_sources(reference, estimation)[0]
     sdr = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation)).numpy()
-    np.testing.assert_allclose(mir_eval_sdr, [245.530192, 266.500027])
-    np.testing.assert_allclose(sdr, [253.470667, 279.402013])
+    # These numbers aren't reproducible across different package versions.
+    # Note: An error of `np.finfo(np.float64).eps` means 156.5356 dB and
+    #       an error of `np.finfo(np.float32).eps` means 69.2369 dB
+    np.testing.assert_allclose(mir_eval_sdr, [245.530192, 266.500027], atol=10)
+    np.testing.assert_allclose(sdr, [253.470667, 279.402013], atol=10)
 
 
 def test_vs_sdr_si_sdr():
