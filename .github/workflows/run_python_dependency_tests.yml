@@ -25,8 +25,8 @@ jobs:
         trap 'echo -e "$ $BASH_COMMAND"' DEBUG
         python -m pip install --upgrade pip
         pip install pytest pytest-cov
+        # torch CPU installs faster, hence manual install
         pip install torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
-        pip install numpy scipy Cython
         pip install .
     - name: Test with pytest
       run: |
