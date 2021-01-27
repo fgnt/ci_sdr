@@ -1,5 +1,6 @@
 import itertools
 import torch
+import einops
 from ci_sdr.pt.wiener_filter import wiener_filter_predict_single_input
 
 
@@ -29,7 +30,8 @@ def linear_to_db(numerator, denominator, eps=None):
     tensor(69.2369)
 
     """
-    assert denominator > 0, denominator
+    # ToDo: add an assert that works for tensors
+    # assert denominator > 0, denominator
     if eps is None:
         return 10 * torch.log10(numerator / denominator)
     else:
@@ -56,8 +58,8 @@ def ci_sdr_loss(
        optimum.
 
     Args:
-        estimation: source x samples
-        reference: source x samples
+        estimation: ... x source x samples
+        reference: ... x source x samples
         compute_permutation: If true, assume estimation source index is
             permuted. Note mir_eval.separation.bss_eval_sources computes
             the permutation based on the SIR, while this function computes the
@@ -74,9 +76,96 @@ def ci_sdr_loss(
     )
 
 
-def ci_sdr(
-        reference,  # K x T
+def ci_sdr_loss_hungarian(
         estimation,  # K x T
+        reference,  # K x T
+        *,
+        # compute_permutation=True,
+        filter_length=512,
+        soft_max_SDR=None,
+        algorithm='optimal',  # 'optimal', 'greedy'
+):
+    """Convolutive transfer function Invariant Signal-to-Distortion Ratio loss
+
+    The `ci_sdr_loss` function is more efficient for low number of speakers,
+    while this function has advantages for larger number of speakers.
+    The optimization of this function is, that instead of triing each
+    permutation, it uses the idea of the Hungarian algorithm to decompose the
+    permutation problem in the calculation of a loss/score matrix and a
+    "linear sum assignment" problem (scipy.optimize.linear_sum_assignment).
+
+    Args:
+        estimation: ... x source x samples
+        reference: ... x source x samples
+        filter_length:
+        soft_max_SDR:
+        algorithm: Either 'optimal' or 'greedy'
+         - 'optimal': Use scipy.optimize.linear_sum_assignment to find the
+                      optimal assignment
+         - 'greedy' : Use a gready approach to find a good assignment.
+                      ToDo: Check thesis: greedy is better for large number of
+                                          speakers.
+
+    Returns:
+
+    Example:
+        >>> reference = torch.tensor([[1., 2, 1, 2], [4, 3, 2, 1], [1, 2, 3, 4]])
+        >>> estimation = torch.tensor([[1., 2, 3, 4], [1, 2, 1, 2], [4, 3, 2, 1]])
+        >>> ci_sdr_loss_hungarian(estimation, reference, filter_length=2)
+        tensor([-144.0805, -145.4635, -143.0331])
+        >>> ci_sdr_loss(estimation, reference, filter_length=2)
+        tensor([-144.0805, -145.4635, -143.0331])
+        >>> estimation = torch.tensor([[1., 2, 2, 4], [1, 1, 1, 2], [4, 2, 2, 1]])
+        >>> ci_sdr_loss_hungarian(estimation, reference, filter_length=2)
+        tensor([-10.3300, -17.2712, -15.4051])
+        >>> ci_sdr_loss(estimation, reference, filter_length=2)
+        tensor([-10.3300, -17.2712, -15.4051])
+        >>> ci_sdr_loss_hungarian(estimation[None], reference[None], filter_length=2)
+        tensor([[-10.3300, -17.2712, -15.4051]])
+
+    """
+    from padertorch.ops.losses.source_separation import pit_loss_from_loss_matrix
+
+    estimation = estimation[..., None, :, :]
+    reference = reference[..., :, None, :]
+
+    loss_matrix = ci_sdr_loss(
+        estimation=estimation,
+        reference=reference,
+        filter_length=filter_length,
+        soft_max_SDR=soft_max_SDR,
+        compute_permutation=False,
+    )
+
+    if len(loss_matrix.shape) == 2:
+        return pit_loss_from_loss_matrix(
+            loss_matrix,
+            reduction=None,
+            algorithm=algorithm  # 'optimal', 'greedy'
+        )
+    else:
+        loss_matrix_flat = einops.rearrange(loss_matrix, '... k1 k2 -> (...) k1 k2')
+        loss = torch.stack([pit_loss_from_loss_matrix(
+            l,
+            reduction=None,
+            algorithm=algorithm  # 'optimal', 'greedy'
+        ) for l in loss_matrix_flat])
+        return loss.reshape(*loss_matrix.shape[:-1])
+
+
+def _is_broadcastable(shape1, shape2):
+    # https://stackoverflow.com/a/24769712/5766934
+    for a, b in zip(shape1[::-1], shape2[::-1]):
+        if a == 1 or b == 1 or a == b:
+            pass
+        else:
+            return False
+    return True
+
+
+def ci_sdr(
+        reference,  # ... x K x T
+        estimation,  # ... x K x T
         *,
         compute_permutation=True,
         change_sign=False,
@@ -89,8 +178,8 @@ def ci_sdr(
     SDR from `mir_eval.separation.bss_eval_sources`.
 
     Args:
-        reference: source x samples
-        estimation: source x samples
+        reference: ... x source x samples
+        estimation: ... x source x samples
         compute_permutation: If true, assume estimation source index is
             permuted. Note mir_eval.separation.bss_eval_sources computes
             the permutation based on the SIR, while this function computes the
@@ -198,24 +287,24 @@ def ci_sdr(
     >>> ci_sdr(reference_pt, estimation_pt, soft_max_SDR=None, filter_length=0, change_sign=True)
     tensor([-9.9814, -9.4490], dtype=torch.float64)
     """
-
-    assert reference.shape == estimation.shape, (reference.shape, estimation.shape)
     if len(reference.shape) == 1:
+        assert len(estimation.shape) == 1, (reference.shape, estimation.shape)
         single_source = True
         reference = reference[None, :]
         estimation = estimation[None, :]
     else:
         single_source = False
 
-    K, num_samples = reference.shape
+    *_, K, num_samples = reference.shape
 
     if K > 1 and compute_permutation:
+        assert reference.shape == estimation.shape, (reference.shape, estimation.shape)
         # ToDo: Add option to use hungarian algorithm
         #       Note:
         #        - The hungarian algorithm cannot release intermediate tensors
         #        - The hungarien algorithm has advantages for K > 3
 
-        axis = 0
+        axis = -2
         candidates = []
         indexer = [slice(None), ] * estimation.ndim
         permutations = list(itertools.permutations(range(K)))
@@ -233,36 +322,42 @@ def ci_sdr(
                 filter_length=filter_length, soft_max_SDR=soft_max_SDR,
                 compute_permutation=False,
             ))
-        candidates = torch.stack(candidates)
-        _, idx = torch.max(torch.sum(candidates, axis=1), dim=0)
-        sdr = candidates[idx]
+        if len(reference.shape) == 2:  # No batch axis
+            candidates = torch.stack(candidates)
+            _, idx = torch.max(torch.sum(candidates, axis=-1), dim=0)
+            sdr = candidates[idx]
+        else:
+            candidates = torch.stack(candidates)
+            candidates_flat = einops.rearrange(
+                candidates,
+                'permutations ... k -> permutations (...) k'
+            )
+            _, idx = torch.max(torch.sum(candidates_flat, axis=-1), dim=0)
+            batch_size = candidates_flat.shape[1]
+            sdr = candidates_flat[idx, range(batch_size), :]
+            sdr = sdr.reshape(*candidates.shape[1:])
         if change_sign:
             return -sdr
         else:
             return sdr
 
-    scores = []
-    for k in range(K):
-        est = estimation[k]
+    assert _is_broadcastable(reference.shape, estimation.shape), (reference.shape, estimation.shape)
+    assert reference.shape[-1] == estimation.shape[-1], (reference.shape, estimation.shape)
 
-        if filter_length != 0:
-            reverberated = wiener_filter_predict_single_input(
-                reference[k], estimation[k], filter_length=filter_length)
-            est = torch.nn.functional.pad(est, [0, filter_length-1])
-        else:
-            reverberated = reference[k]
-
-        num = torch.sum(reverberated**2)
-        den = torch.sum((reverberated - est)**2)
-
-        scores.append(linear_to_db(num, den, eps=soft_max_SDR_to_eps(soft_max_SDR)))
-
-    if change_sign:
-        scores = -torch.stack(scores)
+    est = estimation
+    if filter_length != 0:
+        reverberated = wiener_filter_predict_single_input(
+            reference, estimation, filter_length=filter_length)
+        est = torch.nn.functional.pad(est, [0, filter_length - 1])
     else:
-        scores = torch.stack(scores)
+        reverberated = reference
+    num = torch.sum(reverberated**2, dim=-1)
+    den = torch.sum((reverberated - est)**2, dim=-1)
+    scores = linear_to_db(num, den, eps=soft_max_SDR_to_eps(soft_max_SDR))
+    if change_sign:
+        scores = -scores
 
     if single_source:
-        scores = torch.squeeze(scores, dim=0)
+        scores = torch.squeeze(scores, dim=-1)
 
     return scores
