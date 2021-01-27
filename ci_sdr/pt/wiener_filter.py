@@ -71,6 +71,13 @@ def rfft(signal, n_fft, _native_complex=_native_complex):
     >>> irfft(rfft(t, 8, True), 8, True)
     tensor([1.0000e+00, 2.0000e+00, 3.0000e+00, 4.0000e+00, 0.0000e+00, 1.1921e-07,
             0.0000e+00, 1.1921e-07])
+
+    >>> irfft(rfft(torch.stack([t, t + 10], 0), 4, True), 4, True)
+    tensor([[ 1.,  2.,  3.,  4.],
+            [11., 12., 13., 14.]])
+    >>> irfft(rfft(torch.stack([t, t + 10], 0), 4, False), 4, False)
+    tensor([[ 1.,  2.,  3.,  4.],
+            [11., 12., 13., 14.]])
     """
     import torch
     if _native_complex:
@@ -310,8 +317,16 @@ def wiener_filter_predict_single_input(
     >>> filter_est = wiener_filter_predict_single_input(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True).numpy()
     >>> np.testing.assert_allclose(filter_est, [1.000079, -1.996279], atol=1e-6)
 
+    >>> x1, x2 = np.random.RandomState(0).randn(2, 400).astype(dtype=np.float64)
+    >>> filter1 = [1, -2]
+    >>> filter2 = [3, -2]
+    >>> y1 = np.convolve(x1, filter1)[:1-len(filter1)]
+    >>> y2 = np.convolve(x2, filter2)[:1-len(filter2)]
+    >>> filter_est = wiener_filter_predict_single_input(torch.as_tensor([x1, x2]), torch.as_tensor([y1, y2]), 2, return_w=True).numpy()
+    >>> np.testing.assert_allclose(filter_est[0], [1.000079, -1.996279], atol=1e-6)
+    >>> np.testing.assert_allclose(filter_est[1], [3.000067, -1.99662], atol=1e-6)
     """
-    assert len(observation.shape) == 1, observation.shape
+    assert len(observation.shape) >= 1, observation.shape
 
     observation_length = observation.shape[-1]
 
