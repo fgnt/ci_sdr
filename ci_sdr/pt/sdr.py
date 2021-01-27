@@ -109,8 +109,8 @@ def ci_sdr_loss_hungarian(
     Returns:
 
     Example:
-        >>> reference = torch.tensor([[1, 2, 1, 2], [4, 3, 2, 1], [1, 2, 3, 4]])
-        >>> estimation = torch.tensor([[1, 2, 3, 4], [1, 2, 1, 2], [4, 3, 2, 1]])
+        >>> reference = torch.tensor([[1., 2, 1, 2], [4, 3, 2, 1], [1, 2, 3, 4]])
+        >>> estimation = torch.tensor([[1., 2, 3, 4], [1, 2, 1, 2], [4, 3, 2, 1]])
         >>> ci_sdr_loss_hungarian(estimation, reference, filter_length=2)
         tensor([-144.0805, -145.4635, -143.0331])
         >>> ci_sdr_loss(estimation, reference, filter_length=2)
