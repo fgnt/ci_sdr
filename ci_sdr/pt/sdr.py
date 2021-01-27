@@ -76,7 +76,83 @@ def ci_sdr_loss(
     )
 
 
+def ci_sdr_loss_hungarian(
         estimation,  # K x T
+        reference,  # K x T
+        *,
+        # compute_permutation=True,
+        filter_length=512,
+        soft_max_SDR=None,
+        algorithm='optimal',  # 'optimal', 'greedy'
+):
+    """Convolutive transfer function Invariant Signal-to-Distortion Ratio loss
+
+    The `ci_sdr_loss` function is more efficient for low number of speakers,
+    while this function has advantages for larger number of speakers.
+    The optimization of this function is, that instead of triing each
+    permutation, it uses the idea of the Hungarian algorithm to decompose the
+    permutation problem in the calculation of a loss/score matrix and a
+    "linear sum assignment" problem (scipy.optimize.linear_sum_assignment).
+
+    Args:
+        estimation: ... x source x samples
+        reference: ... x source x samples
+        filter_length:
+        soft_max_SDR:
+        algorithm: Either 'optimal' or 'greedy'
+         - 'optimal': Use scipy.optimize.linear_sum_assignment to find the
+                      optimal assignment
+         - 'greedy' : Use a gready approach to find a good assignment.
+                      ToDo: Check thesis: greedy is better for large number of
+                                          speakers.
+
+    Returns:
+
+    Example:
+        >>> reference = torch.tensor([[1, 2, 1, 2], [4, 3, 2, 1], [1, 2, 3, 4]])
+        >>> estimation = torch.tensor([[1, 2, 3, 4], [1, 2, 1, 2], [4, 3, 2, 1]])
+        >>> ci_sdr_loss_hungarian(estimation, reference, filter_length=2)
+        tensor([-144.0805, -145.4635, -143.0331])
+        >>> ci_sdr_loss(estimation, reference, filter_length=2)
+        tensor([-144.0805, -145.4635, -143.0331])
+        >>> estimation = torch.tensor([[1, 2, 2, 4], [1, 1, 1, 2], [4, 2, 2, 1]])
+        >>> ci_sdr_loss_hungarian(estimation, reference, filter_length=2)
+        tensor([-10.3300, -17.2712, -15.4051])
+        >>> ci_sdr_loss(estimation, reference, filter_length=2)
+        tensor([-10.3300, -17.2712, -15.4051])
+        >>> ci_sdr_loss_hungarian(estimation[None], reference[None], filter_length=2)
+        tensor([[-10.3300, -17.2712, -15.4051]])
+
+    """
+    from padertorch.ops.losses.source_separation import pit_loss_from_loss_matrix
+
+    estimation = estimation[..., None, :, :]
+    reference = reference[..., :, None, :]
+
+    loss_matrix = ci_sdr_loss(
+        estimation=estimation,
+        reference=reference,
+        filter_length=filter_length,
+        soft_max_SDR=soft_max_SDR,
+        compute_permutation=False,
+    )
+
+    if len(loss_matrix.shape) == 2:
+        return pit_loss_from_loss_matrix(
+            loss_matrix,
+            reduction=None,
+            algorithm=algorithm  # 'optimal', 'greedy'
+        )
+    else:
+        loss_matrix_flat = einops.rearrange(loss_matrix, '... k1 k2 -> (...) k1 k2')
+        loss = torch.stack([pit_loss_from_loss_matrix(
+            l,
+            reduction=None,
+            algorithm=algorithm  # 'optimal', 'greedy'
+        ) for l in loss_matrix_flat])
+        return loss.reshape(*loss_matrix.shape[:-1])
+
+
 def _is_broadcastable(shape1, shape2):
     # https://stackoverflow.com/a/24769712/5766934
     for a, b in zip(shape1[::-1], shape2[::-1]):
