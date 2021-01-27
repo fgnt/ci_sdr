@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+import einops
 import numpy as np
 import torch
 
@@ -133,3 +134,78 @@ def test_vs_sdr_si_sdr():
     np.testing.assert_allclose(ref_sdr, np.mean(sdr))
     np.testing.assert_allclose(ref_sdr, -9.715154, rtol=1e-6)
     np.testing.assert_allclose(sdr, [-9.448952, -9.981357], rtol=1e-6)
+
+
+def test_batched():
+    data = get_data()
+    ref_channel = 0
+
+    permutation = [1, 0]
+
+    reference = np.array([data.speech_source, data.speech_source[permutation]])
+    estimation = np.array([
+        data.speech_reverberation_early[:, ref_channel, :],
+        data.speech_image[permutation, ref_channel, :]])
+    sdr = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation), compute_permutation=False).numpy()
+    sdr_loopy = [
+        ci_sdr.pt.ci_sdr(torch.tensor(reference[0]), torch.tensor(estimation[0]), compute_permutation=False).numpy(),
+        ci_sdr.pt.ci_sdr(torch.tensor(reference[1]), torch.tensor(estimation[1]), compute_permutation=False).numpy(),
+    ]
+    np.testing.assert_allclose(sdr_loopy, sdr)
+    np.testing.assert_allclose(
+        sdr, [[61.984948, 44.553148], [12.450273, 12.605762]])
+
+    sdr_perm = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation), compute_permutation=True).numpy()
+    np.testing.assert_allclose(sdr_loopy, sdr_perm)
+
+    estimation = np.array([
+        data.speech_reverberation_early[(1, 0), ref_channel, :],
+        data.speech_image[(1, 0), ref_channel, :]])
+    sdr_perm = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation), compute_permutation=True).numpy()
+    np.testing.assert_allclose(sdr_loopy, sdr_perm)
+
+    estimation = np.array([
+        data.speech_reverberation_early[(1, 0), ref_channel, :],
+        data.speech_image[(0, 1), ref_channel, :]])
+    sdr_perm = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation), compute_permutation=True).numpy()
+    np.testing.assert_allclose(sdr_loopy, sdr_perm)
+
+    estimation = np.array([
+        data.speech_reverberation_early[(0, 1), ref_channel, :],
+        data.speech_image[(0, 1), ref_channel, :]])
+    sdr_perm = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation), compute_permutation=True).numpy()
+    np.testing.assert_allclose(sdr_loopy, sdr_perm)
+
+    sdr_perm = ci_sdr.pt.ci_sdr(torch.tensor(reference)[None], torch.tensor(estimation)[None], compute_permutation=True).numpy()
+    np.testing.assert_allclose(sdr_loopy, np.squeeze(sdr_perm, axis=0))
+
+    rng = np.random.RandomState(0)
+    reference = torch.tensor(rng.normal(size=[3, 5, 7, 2, 100]))
+    estimation = torch.tensor(rng.normal(size=[3, 5, 7, 2, 100]))
+
+    sdr = ci_sdr.pt.ci_sdr(reference, estimation, compute_permutation=False, filter_length=16).numpy()
+    sdr_loopy = [
+        ci_sdr.pt.ci_sdr(r, e, compute_permutation=False, filter_length=16).numpy()
+        for r, e in zip(
+            einops.rearrange(reference, '... sources time -> (...) sources time'),
+            einops.rearrange(estimation, '... sources time -> (...) sources time'),
+        )
+    ]
+    sdr_loopy = einops.rearrange(
+        sdr_loopy, '(a b c) sources -> a b c sources', a=3, b=5, c=7)
+    np.testing.assert_allclose(sdr, sdr_loopy, rtol=1e-6, atol=1e-6)
+
+    sdr = ci_sdr.pt.ci_sdr(reference, estimation, compute_permutation=True, filter_length=16).numpy()
+    # With permutation solving, the solution is different
+    np.testing.assert_allclose(np.sqrt(np.mean((sdr - sdr_loopy)**2)), 1.781779, rtol=1e-6, atol=1e-6)
+
+    sdr_loopy = [
+        ci_sdr.pt.ci_sdr(r, e, compute_permutation=True, filter_length=16).numpy()
+        for r, e in zip(
+            einops.rearrange(reference, '... sources time -> (...) sources time'),
+            einops.rearrange(estimation, '... sources time -> (...) sources time'),
+        )
+    ]
+    sdr_loopy = einops.rearrange(
+        sdr_loopy, '(a b c) sources -> a b c sources', a=3, b=5, c=7)
+    np.testing.assert_allclose(sdr, sdr_loopy, rtol=1e-6, atol=1e-6)
