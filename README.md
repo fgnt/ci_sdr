@@ -39,6 +39,12 @@ The PyTorch code in this package is tested to yield the same `SDR` values as `mi
 Install it directly with Pip, if you just want to use it:
 
 ```
+pip install ci-sdr
+```
+
+or to get the recent version:
+
+```
 pip install git+https://github.com/fgnt/ci_sdr.git
 ```
 
