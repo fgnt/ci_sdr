@@ -1,10 +1,13 @@
 # Convolutive Transfer Function Invariant SDR
 
 ![Run python tests](https://github.com/fgnt/ci_sdr/workflows/Run%20python%20tests/badge.svg)
+[![PyPI](https://img.shields.io/pypi/v/ci_sdr)](https://pypi.org/project/ci-sdr)
 [![codecov.io](https://codecov.io/github/fgnt/ci_sdr/coverage.svg?branch=main)](https://codecov.io/github/fgnt/ci_sdr?branch=main)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/ci_sdr)](https://pypi.org/project/ci-sdr)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/fgnt/ci_sdr/blob/master/LICENSE)
 
 <!-- ![Run python dependency test](https://github.com/fgnt/ci_sdr/workflows/Run%20python%20dependency%20test/badge.svg) -->
+
 
 This repository contains an implementation for the `Convolutive transfer function Invariant Signal-to-Distortion Ratio` objective for PyTorch as described in the publication `Convolutive Transfer Function Invariant SDR training criteria for Multi-Channel Reverberant Speech Separation` ([link arXiv][arXiv]).
 
@@ -38,19 +41,25 @@ The PyTorch code in this package is tested to yield the same `SDR` values as `mi
 
 Install it directly with Pip, if you just want to use it:
 
+```bash
+pip install ci-sdr
 ```
+
+or to get the recent version:
+
+```bash
 pip install git+https://github.com/fgnt/ci_sdr.git
 ```
 
 If you want to install it with `all` dependencies (test and doctest dependencies), run:
 
-```
+```bash
 pip install git+https://github.com/fgnt/ci_sdr.git#egg=ci_sdr[all]
 ```
 
 When you want to change the code, clone this repository and install it as `editable`:
 
-```
+```bash
 git clone https://github.com/fgnt/ci_sdr.git
 cd ci_sdr
 pip install --editable .
@@ -59,7 +68,7 @@ pip install --editable .
 
 # Citation
 
-To cite this implementation, you can cite the following paper ([link](arXiv)):
+To cite this implementation, you can cite the following paper ([link][arXiv]):
 ```
 @article{boeddeker2020convolutive,
   title   = {Convolutive Transfer Function Invariant {SDR} training criteria for Multi-Channel Reverberant Speech Separation},
