@@ -11,14 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.6, 3.7, 3.8, 3.9]
         pytorch-install: [
             "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html",
         ]
         include:
           - python-version: 3.7
             pytorch-install: "torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html"
-          - python-version: 3.7
+          - python-version: 3.9
             pytorch-install: "--pre torch -f https://download.pytorch.org/whl/torch_nightly.html"
 
     steps:
