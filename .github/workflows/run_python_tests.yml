@@ -18,7 +18,9 @@ jobs:
         include:
           - python-version: 3.7
             pytorch-install: "torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html"
-          - python-version: 3.7
+          - python-version: 3.9
+            pytorch-install: "torch -f https://download.pytorch.org/whl/cpu"
+          - python-version: 3.9
             pytorch-install: "--pre torch -f https://download.pytorch.org/whl/torch_nightly.html"
 
     steps:

@@ -4,18 +4,29 @@ import numpy as np
 import einops
 
 import torch
+import torch.nn.functional
 
 from ci_sdr.pt.toeplitz import toeplitz
 
-if not hasattr(torch, 'solve'):  # torch <= 1.0.0
-    torch.solve = torch.gesv
 
 # torch 1.7 introduces numpy compatible torch.fft module, while
 # it was earlier a function.
 # The old functions expect a real tensor as input, where the last dimension
 # has 2 entries for the real and imag part.
 # The new functions use the native complex support from torch.
-_native_complex = LooseVersion(torch.__version__) >= "1.7.0"
+loose_torch_version = LooseVersion(torch.__version__)
+_native_complex = loose_torch_version >= "1.7.0"
+
+if loose_torch_version >= '1.9.0':
+    torch_linalg_solve = torch.linalg.solve
+elif loose_torch_version <= '1.0.0':
+    # if not hasattr(torch, 'solve'):  # torch <= 1.0.0
+    #     torch.solve = torch.gesv
+    def torch_linalg_solve(A, B):
+        return torch.gesv(B, A)[0]
+else:
+    def torch_linalg_solve(A, B):
+        return torch.solve(B, A)[0]
 
 
 def complex_mul(x, y, conj_x=False):
@@ -214,9 +225,8 @@ def wiener_filter_predict(
     p = crosscorr[..., :filter_length]
     p = einops.rearrange(p, 'source filter -> (source filter)')
 
-    # Note: The solve arguments are swapped in pytorch
     try:
-        w, _ = torch.solve(p[..., None], R)
+        w = torch_linalg_solve(R, p[..., None])
     except Exception:
         raise Exception(p.shape, R.shape, crosscorr.shape)
     assert w.shape[-1] == 1, w.shape
@@ -249,6 +259,7 @@ def wiener_filter_predict_single_input(
         first_filter_index=0,
         return_w=False,
         _native_complex=_native_complex,
+        return_locals=False,
 ):
     """
 
@@ -311,11 +322,15 @@ def wiener_filter_predict_single_input(
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
 
+    Test filter estimation
+
     >>> x = np.random.RandomState(0).randn(400).astype(dtype=np.float64)
     >>> filter = [1, -2]
     >>> y = np.convolve(x, filter)[:1-len(filter)]
     >>> filter_est = wiener_filter_predict_single_input(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True).numpy()
     >>> np.testing.assert_allclose(filter_est, [1.000079, -1.996279], atol=1e-6)
+
+    Test concurent filter estimation
 
     >>> x1, x2 = np.random.RandomState(0).randn(2, 400).astype(dtype=np.float64)
     >>> filter1 = [1, -2]
@@ -325,6 +340,22 @@ def wiener_filter_predict_single_input(
     >>> filter_est = wiener_filter_predict_single_input(torch.as_tensor([x1, x2]), torch.as_tensor([y1, y2]), 2, return_w=True).numpy()
     >>> np.testing.assert_allclose(filter_est[0], [1.000079, -1.996279], atol=1e-6)
     >>> np.testing.assert_allclose(filter_est[1], [3.000067, -1.99662], atol=1e-6)
+
+    Test non causal filters
+
+    >>> x = np.random.RandomState(0).randn(400).astype(dtype=np.float64)
+    >>> filter = [1, -2]
+    >>> y = np.convolve(x, filter)[len(filter)-1:]
+    >>> filter_est = wiener_filter_predict_single_input(torch.as_tensor(x), torch.as_tensor(y), 2, return_w=True).numpy()
+    >>> np.testing.assert_allclose(filter_est, [-2.019528,  0.077869], atol=1e-6)  # Fail
+    >>> filter_est = wiener_filter_predict_single_input(torch.as_tensor(x), torch.as_tensor(y), 2, first_filter_index=-1, return_w=True).numpy()
+    >>> np.testing.assert_allclose(filter_est, [0.992035, -2.000169], atol=1e-6)   # Work
+
+    >>> x = np.random.RandomState(0).randn(400).astype(dtype=np.float64)
+    >>> filter = [1, -2, 1, -3]
+    >>> y = np.convolve(x, filter)[2:-1]
+    >>> filter_est = wiener_filter_predict_single_input(torch.as_tensor(x), torch.as_tensor(y), 4, first_filter_index=-2, return_w=True).numpy()
+    >>> np.testing.assert_allclose(filter_est, [0.995203, -1.986345,  1.000766, -2.995206], atol=1e-6)   # Work
     """
     assert len(observation.shape) >= 1, observation.shape
 
@@ -367,11 +398,13 @@ def wiener_filter_predict_single_input(
     crosscorr = irfft(Crosscorr, n_fft=n_fft, _native_complex=_native_complex)
     p = crosscorr[..., :filter_length]
 
-    # Note: The solve arguments are swapped in pytorch
-    w, _ = torch.solve(p[..., None], R)
+    w = torch_linalg_solve(R, p[..., None])
     w = torch.squeeze(w, -1)
     # assert w.shape[-1] == 1, w.shape
     # w = w[..., 0]
+
+    if return_locals:
+        return locals()
 
     if return_w:
         return w
