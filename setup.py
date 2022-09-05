@@ -10,7 +10,7 @@ except Exception:
 
 setup(
     name='ci_sdr',
-    version='0.0.0',
+    version='0.0.2',
     description='A sample Python project',
     long_description=long_description,
     long_description_content_type='text/markdown',  # text/plain, text/x-rst, text/markdown
