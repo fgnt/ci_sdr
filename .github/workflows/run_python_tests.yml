@@ -13,14 +13,13 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']
         pytorch-install: [
             "torch --index-url https://download.pytorch.org/whl/cpu",
         ]
-        os: [ubuntu-latest]
         include:
           - python-version: 3.6  # py36 test
             os: ubuntu-22-04
