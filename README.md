@@ -1,5 +1,9 @@
 # Convolutive Transfer Function Invariant SDR
 
+
+[![ISCA DOI](https://img.shields.io/badge/ICASSP/DOI-10.1109/ICASSP39728.2021.9414661-blue.svg)][DOI]
+[![arXiv](https://img.shields.io/badge/arXiv-2011.15003-b31b1b.svg)][arXiv]
+
 ![Run python tests](https://github.com/fgnt/ci_sdr/workflows/Run%20python%20tests/badge.svg)
 [![PyPI](https://img.shields.io/pypi/v/ci_sdr)](https://pypi.org/project/ci-sdr)
 [![codecov.io](https://codecov.io/github/fgnt/ci_sdr/coverage.svg?branch=main)](https://codecov.io/github/fgnt/ci_sdr?branch=main)
@@ -9,7 +13,7 @@
 <!-- ![Run python dependency test](https://github.com/fgnt/ci_sdr/workflows/Run%20python%20dependency%20test/badge.svg) -->
 
 
-This repository contains an implementation for the `Convolutive transfer function Invariant Signal-to-Distortion Ratio` objective for PyTorch as described in the publication `Convolutive Transfer Function Invariant SDR training criteria for Multi-Channel Reverberant Speech Separation` ([link arXiv][arXiv]).
+This repository contains an implementation for the `Convolutive transfer function Invariant Signal-to-Distortion Ratio` objective for PyTorch as described in the publication `Convolutive Transfer Function Invariant SDR training criteria for Multi-Channel Reverberant Speech Separation` ([IEEE ICASSP][DOI], [RIS UPB][RIS], [arXiv][arXiv]).
 
 Here, a small example, how you can use this CI-SDR objective in your own source code:
 
@@ -29,7 +33,7 @@ sdr = ci_sdr.pt.ci_sdr_loss(estimation, reference)
 
 The idea of this objective function is based in the theory from `E. Vincent, R. Gribonval and C. Févotte, Performance measurement in blind audio source separation, IEEE Trans. Audio, Speech and Language Processing`, known as
 `BSSEval`.
-The original author provided MATLAB source code ([link](http://bass-db.gforge.inria.fr/bss_eval/)) and the package `mir_eval` ([link](http://craffel.github.io/mir_eval/#module-mir_eval.separation)) contains a python port. Some peoble refer to these implementations as `BSSEval v3` ([link](https://github.com/sigsep/bsseval)).
+The original author provided MATLAB source code ([link](http://bass-db.gforge.inria.fr/bss_eval/)) and the package `mir_eval` ([link](http://craffel.github.io/mir_eval/#module-mir_eval.separation)) contains a python port. Some people refer to these implementations as `BSSEval v3` ([link](https://github.com/sigsep/bsseval)).
 
 The PyTorch code in this package is tested to yield the same `SDR` values as `mir_eval` with the default parameters.
 
@@ -68,16 +72,19 @@ pip install --editable .
 
 # Citation
 
-To cite this implementation, you can cite the following paper ([link][arXiv]):
+To cite this implementation, you can cite the following paper ([IEEE ICASSP][DOI], [RIS UPB][RIS], [arXiv][arXiv]):
 ```
-@article{boeddeker2020convolutive,
-  title   = {Convolutive Transfer Function Invariant {SDR} training criteria for Multi-Channel Reverberant Speech Separation},
-  author  = {Boeddeker, Christoph and Zhang, Wangyou and Nakatani, Tomohiro and Kinoshita, Keisuke and Ochiai, Tsubasa and Delcroix, Marc and Kamo, Naoyuki and Qian, Yanmin and Haeb-Umbach, Reinhold},
-  journal = {arXiv preprint arXiv:2011.15003},
-  year    = {2020}
+@inproceedings{boeddeker2021convolutive,
+  title={Convolutive transfer function invariant SDR training criteria for multi-channel reverberant speech separation},
+  author={Boeddeker, Christoph and Zhang, Wangyou and Nakatani, Tomohiro and Kinoshita, Keisuke and Ochiai, Tsubasa and Delcroix, Marc and Kamo, Naoyuki and Qian, Yanmin and Haeb-Umbach, Reinhold},
+  booktitle={IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  pages={8428--8432},
+  year={2021},
+  organization={IEEE},
+  doi={10.1109/ICASSP39728.2021.9414661}}
 }
 ```
 
-
-
+[RIS]: https://ris.uni-paderborn.de/download/28259/28260/ICASSP2021_BSSEval.pdf
+[DOI]: https://doi.org/10.1109/ICASSP39728.2021.9414661
 [arXiv]: https://arxiv.org/abs/2011.15003
