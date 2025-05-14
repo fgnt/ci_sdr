@@ -25,10 +25,10 @@ jobs:
             os: ubuntu-22-04
             pytorch-install: "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html"
           - python-version: 3.7  # test older torch
-          - os: ubuntu-22-04
+            os: ubuntu-22-04
             pytorch-install: "torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html"
           - python-version: 3.7  # py37 test
-          - os: ubuntu-22-04
+            os: ubuntu-22-04
             pytorch-install: "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html"
           - python-version: 3.8  # py38 test
             pytorch-install: "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html"
