@@ -1,5 +1,11 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+# 
+# Notes:
+# - torch==1.7 added native support for complex numbers
+# - torch==1.8? removed non native complex numbers support
+# - torch==1.9 renamed 'torch.solve(B, A)[0]' to 'torch.linalg.solve(A, B)'
+# - Some tests are only executed if the torch version is 1.7, because that is the only version that supports native and non native complex numbers
 
 name: Run python tests
 
@@ -8,20 +14,28 @@ on: [push, pull_request]
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: ['3.10', '3.11', '3.12', '3.13']
         pytorch-install: [
-            "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html",
+            "torch --index-url https://download.pytorch.org/whl/cpu",
         ]
+        os: [ ubuntu-latest ]
         include:
-          - python-version: 3.7
+          - python-version: 3.6  # py36 test
+            os: ubuntu-22-04
+            pytorch-install: "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html"
+          - python-version: 3.7  # test older torch
+          - os: ubuntu-22-04
             pytorch-install: "torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html"
-          - python-version: 3.9
+          - python-version: 3.7  # py37 test
+          - os: ubuntu-22-04
+            pytorch-install: "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html"
+          - python-version: 3.8  # py38 test
+            pytorch-install: "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html"
+          - python-version: 3.9  # py39 test with stable torch
             pytorch-install: "torch -f https://download.pytorch.org/whl/cpu"
-          - python-version: 3.9
-            pytorch-install: "--pre torch -f https://download.pytorch.org/whl/torch_nightly.html"
 
     steps:
     - uses: actions/checkout@v2
