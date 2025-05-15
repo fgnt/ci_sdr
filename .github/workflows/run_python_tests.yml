@@ -10,6 +10,8 @@
 # Py37 was remove in Jan 08, 2025 from Ubuntu 22.04 (https://github.com/actions/runner-images/pull/11299)
 # Py38 will be removed on Jun 06, 2025 (https://github.com/actions/runner-images/issues/12034)
 
+# Github Action cannot be used to test torch==1.6 anymore. torch==1.6 is not available to py39+ and Github Action has removed py38
+
 name: Run python tests
 
 on: 
@@ -28,8 +30,6 @@ jobs:
             "torch --index-url https://download.pytorch.org/whl/cpu",
         ]
         include:
-          - python-version: 3.9  # test older torch
-            pytorch-install: "torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html"
           - python-version: 3.9  # torch==1.7 is the only version that supports native and non native complex numbers and hence some tests can only be executed with torch==1.7
             pytorch-install: "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html"
 
