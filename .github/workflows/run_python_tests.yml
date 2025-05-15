@@ -1,32 +1,43 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+# 
+# Notes:
+# - torch==1.7 added native support for complex numbers
+# - torch==1.8? removed non native complex numbers support
+# - torch==1.9 renamed 'torch.solve(B, A)[0]' to 'torch.linalg.solve(A, B)'
+# - Some tests are only executed if the torch version is 1.7, because that is the only version that supports native and non native complex numbers
+# 
+# Py37 was remove in Jan 08, 2025 from Ubuntu 22.04 (https://github.com/actions/runner-images/pull/11299)
+# Py38 will be removed on Jun 06, 2025 (https://github.com/actions/runner-images/issues/12034)
+
+# Github Action cannot be used to test torch==1.6 anymore. torch==1.6 is not available to py39+ and Github Action has removed py38
+
+# GitHub Action with py39 and torch==1.7: Exception from torch raised in /opt/hostedtoolcache/Python/3.9.22/x64/lib/python3.9/site-packages/torch/__init__.py:190
+#  - RuntimeError: generic_type: cannot initialize type "TensorProtoDataType": an object with that name is already defined
+# Hence remove all tests with old pytorch versions
 
 name: Run python tests
 
-on: [push, pull_request]
+on: 
+  push:
+    branches: [ master, main ]
+  pull_request:
+
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         pytorch-install: [
-            "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html",
+            "torch --index-url https://download.pytorch.org/whl/cpu",
         ]
-        include:
-          - python-version: 3.7
-            pytorch-install: "torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html"
-          - python-version: 3.9
-            pytorch-install: "torch -f https://download.pytorch.org/whl/cpu"
-          - python-version: 3.9
-            pytorch-install: "--pre torch -f https://download.pytorch.org/whl/torch_nightly.html"
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies

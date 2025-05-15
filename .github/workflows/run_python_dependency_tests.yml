@@ -3,7 +3,10 @@
 
 name: Run python dependency test
 
-on: [push, pull_request]
+on: 
+  push:
+    branches: [ master, main ]
+  pull_request:
 
 jobs:
   build:
@@ -11,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: ['3.12']
 
     steps:
     - uses: actions/checkout@v2
@@ -26,7 +29,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest pytest-cov
         # torch CPU installs faster, hence manual install
-        pip install torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        pip install torch --index-url https://download.pytorch.org/whl/cpu
         pip install .
     - name: Test with pytest
       run: |
