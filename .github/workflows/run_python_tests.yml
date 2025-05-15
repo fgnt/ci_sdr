@@ -6,10 +6,17 @@
 # - torch==1.8? removed non native complex numbers support
 # - torch==1.9 renamed 'torch.solve(B, A)[0]' to 'torch.linalg.solve(A, B)'
 # - Some tests are only executed if the torch version is 1.7, because that is the only version that supports native and non native complex numbers
+# 
+# Py37 was remove in Jan 08, 2025 from Ubuntu 22.04 (https://github.com/actions/runner-images/pull/11299)
+# Py38 will be removed on Jun 06, 2025 (https://github.com/actions/runner-images/issues/12034)
 
 name: Run python tests
 
-on: [push, pull_request]
+on: 
+  push:
+    branches: [ master, main ]
+  pull_request:
+
 
 jobs:
   build:
@@ -21,13 +28,10 @@ jobs:
             "torch --index-url https://download.pytorch.org/whl/cpu",
         ]
         include:
-          - python-version: 3.6  # py36 test
-            os: ubuntu-22-04
-            pytorch-install: "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html"
-          - python-version: 3.7  # test older torch
+          - python-version: 3.9  # test older torch
             os: ubuntu-22-04
             pytorch-install: "torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html"
-          - python-version: 3.7  # py37 test
+          - python-version: 3.9  # py37 test
             os: ubuntu-22-04
             pytorch-install: "torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html"
           - python-version: 3.8  # py38 test
