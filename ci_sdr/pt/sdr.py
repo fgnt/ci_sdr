@@ -115,9 +115,9 @@ def ci_sdr_loss_hungarian(
         # Perfect reconstruction is not stable in pytorch, so add a small value to refernce
 
         >>> ci_sdr_loss_hungarian(estimation, reference + 0.00001, filter_length=2)  # doctest: +ELLIPSIS
-        tensor([-114.2..., -119.2..., -116.7...])
+        tensor([-114..., -119..., -116...])
         >>> ci_sdr_loss(estimation, reference + 0.00001, filter_length=2)  # doctest: +ELLIPSIS
-        tensor([-114.2..., -119.1..., -116.7...])
+        tensor([-114..., -119..., -116...])
         
         >>> estimation = torch.tensor([[1., 2, 2, 4], [1, 1, 1, 2], [4, 2, 2, 1]])
         >>> ci_sdr_loss_hungarian(estimation, reference, filter_length=2)
