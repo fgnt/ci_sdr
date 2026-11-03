@@ -56,7 +56,8 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install numpy scipy Cython
         pip install .[all]
-        pip install git+https://github.com/fgnt/padertorch.git git+https://github.com/fgnt/pb_bss.git
+        # six: paderbox.testing imports it, but paderbox does not declare it.
+        pip install six git+https://github.com/fgnt/padertorch.git git+https://github.com/fgnt/pb_bss.git
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
