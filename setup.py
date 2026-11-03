@@ -55,11 +55,12 @@ setup(
             'pytest',
             'soundFile',
             'mir_eval',
-            # paderbox is already in padertorch/setup.py.
-            # pip has problems, because padertorch uses http.
-            # 'paderbox @ git+https://github.com/fgnt/paderbox',
-            'padertorch @ git+https://github.com/fgnt/padertorch',
-            'pb_bss @ git+https://github.com/fgnt/pb_bss',
+            # padertorch (which brings paderbox) and pb_bss are also needed
+            # for the tests and doctests, but they are not on PyPI and must
+            # not be listed here as git URLs: pip>=26.3 refuses to install a
+            # PyPI release that declares any direct URL dependency, even in
+            # an extra that is not requested. Install them from git, see the
+            # README.
         ],
     },
     # package_data={
