@@ -8,7 +8,7 @@ import paderbox as pb
 from paderbox.testing.testfile_fetcher import fetch_file_from_url
 
 import ci_sdr
-from ci_sdr._mir_eval_bss_eval import bss_eval_sources
+from mir_eval_bss_eval import bss_eval_sources
 
 
 def get_data():

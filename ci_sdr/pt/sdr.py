@@ -224,7 +224,7 @@ def ci_sdr(
     >>> reference_pt = torch.as_tensor(reference)
     >>> estimation_pt = torch.as_tensor(estimation)
 
-    >>> from ci_sdr._mir_eval_bss_eval import bss_eval_sources
+    >>> from mir_eval_bss_eval import bss_eval_sources
     >>> bss_eval_sources(reference, estimation)[0]
     array([12.60576235, 12.45027328])
     >>> ci_sdr(reference_pt, estimation_pt)

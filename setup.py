@@ -60,7 +60,7 @@ setup(
             # release that declares any direct URL dependency, even in an
             # extra that is not requested. Install it from git, see the
             # README. The BSS Eval reference the tests compare against is
-            # in ci_sdr/_mir_eval_bss_eval.py, so mir_eval and pb_bss are
+            # in tests/mir_eval_bss_eval.py, so mir_eval and pb_bss are
             # not needed.
         ],
     },
