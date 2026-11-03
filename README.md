@@ -59,7 +59,7 @@ If you want to install it with `all` dependencies (test and doctest dependencies
 
 ```bash
 pip install "ci_sdr[all] @ git+https://github.com/fgnt/ci_sdr.git"
-pip install git+https://github.com/fgnt/padertorch.git git+https://github.com/fgnt/pb_bss.git
+pip install git+https://github.com/fgnt/padertorch.git
 ```
 
 When you want to change the code, clone this repository and install it as `editable`:
@@ -69,7 +69,7 @@ git clone https://github.com/fgnt/ci_sdr.git
 cd ci_sdr
 pip install --editable .
 # pip install --editable .[all]
-# pip install git+https://github.com/fgnt/padertorch.git git+https://github.com/fgnt/pb_bss.git
+# pip install git+https://github.com/fgnt/padertorch.git
 ```
 
 # Citation

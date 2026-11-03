@@ -4,11 +4,11 @@ import einops
 import numpy as np
 import torch
 
-import pb_bss
 import paderbox as pb
 from paderbox.testing.testfile_fetcher import fetch_file_from_url
 
 import ci_sdr
+from ci_sdr._mir_eval_bss_eval import bss_eval_sources
 
 
 def get_data():
@@ -44,36 +44,36 @@ def test_vs_mir_eval():
 
     reference = data.speech_source
     estimation = data.speech_reverberation_early[:, ref_channel, :]
-    mir_eval_sdr = pb_bss.evaluation.mir_eval_sources(reference, estimation)[0]
+    mir_eval_sdr = bss_eval_sources(reference, estimation)[0]
     sdr = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation)).numpy()
     np.testing.assert_allclose(mir_eval_sdr, sdr)
     np.testing.assert_allclose(sdr, [61.984948, 44.553148])
 
     reference = data.speech_source
     estimation = data.speech_image[:, ref_channel, :]
-    mir_eval_sdr = pb_bss.evaluation.mir_eval_sources(reference, estimation)[0]
+    mir_eval_sdr = bss_eval_sources(reference, estimation)[0]
     sdr = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation)).numpy()
     np.testing.assert_allclose(mir_eval_sdr, sdr)
     np.testing.assert_allclose(sdr, [12.605762, 12.450273])
 
     reference = data.speech_source
     estimation = data.observation[:speakers, :]
-    mir_eval_sdr = pb_bss.evaluation.mir_eval_sources(reference, estimation, compute_permutation=True)[0]
+    mir_eval_sdr = bss_eval_sources(reference, estimation, compute_permutation=True)[0]
     sdr = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation), compute_permutation=True).numpy()
     np.testing.assert_allclose(mir_eval_sdr, sdr)
     np.testing.assert_allclose(sdr, [1.833042, -2.798615])
-    mir_eval_sdr = pb_bss.evaluation.mir_eval_sources(reference, estimation, compute_permutation=False)[0]
+    mir_eval_sdr = bss_eval_sources(reference, estimation, compute_permutation=False)[0]
     sdr = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation), compute_permutation=False).numpy()
     np.testing.assert_allclose(mir_eval_sdr, sdr)
     np.testing.assert_allclose(sdr, [1.833042, -2.798615])
 
     reference = data.speech_source
     estimation = data.observation[(1, 0), :]
-    mir_eval_sdr = pb_bss.evaluation.mir_eval_sources(reference, estimation, compute_permutation=True)[0]
+    mir_eval_sdr = bss_eval_sources(reference, estimation, compute_permutation=True)[0]
     sdr = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation), compute_permutation=True).numpy()
     np.testing.assert_allclose(mir_eval_sdr, sdr)
     np.testing.assert_allclose(sdr, [1.833042, -2.798615])
-    mir_eval_sdr = pb_bss.evaluation.mir_eval_sources(reference, estimation, compute_permutation=False)[0]
+    mir_eval_sdr = bss_eval_sources(reference, estimation, compute_permutation=False)[0]
     sdr = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation), compute_permutation=False).numpy()
     np.testing.assert_allclose(mir_eval_sdr, sdr)
     np.testing.assert_allclose(sdr, [1.829307, -2.931903], rtol=1e-6)
@@ -82,7 +82,7 @@ def test_vs_mir_eval():
     # not matter, 200 dB is pretty large.
     reference = data.speech_source
     estimation = data.speech_source
-    mir_eval_sdr = pb_bss.evaluation.mir_eval_sources(reference, estimation)[0]
+    mir_eval_sdr = bss_eval_sources(reference, estimation)[0]
     sdr = ci_sdr.pt.ci_sdr(torch.tensor(reference), torch.tensor(estimation)).numpy()
     # These numbers aren't reproducible across different package versions.
     # Note: An error of `np.finfo(np.float64).eps` means 156.5356 dB and

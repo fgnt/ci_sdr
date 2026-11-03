@@ -54,13 +54,14 @@ setup(
         'all': [
             'pytest',
             'soundFile',
-            'mir_eval',
-            # padertorch (which brings paderbox) and pb_bss are also needed
-            # for the tests and doctests, but they are not on PyPI and must
-            # not be listed here as git URLs: pip>=26.3 refuses to install a
-            # PyPI release that declares any direct URL dependency, even in
-            # an extra that is not requested. Install them from git, see the
-            # README.
+            # padertorch (which brings paderbox) is also needed for the
+            # tests and doctests, but it is not on PyPI and must not be
+            # listed here as a git URL: pip>=26.3 refuses to install a PyPI
+            # release that declares any direct URL dependency, even in an
+            # extra that is not requested. Install it from git, see the
+            # README. The BSS Eval reference the tests compare against is
+            # in ci_sdr/_mir_eval_bss_eval.py, so mir_eval and pb_bss are
+            # not needed.
         ],
     },
     # package_data={
