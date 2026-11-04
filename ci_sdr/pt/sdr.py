@@ -224,8 +224,8 @@ def ci_sdr(
     >>> reference_pt = torch.as_tensor(reference)
     >>> estimation_pt = torch.as_tensor(estimation)
 
-    >>> import pb_bss
-    >>> pb_bss.evaluation.mir_eval_sources(reference, estimation)[0]
+    >>> from mir_eval_bss_eval import bss_eval_sources
+    >>> bss_eval_sources(reference, estimation)[0]
     array([12.60576235, 12.45027328])
     >>> ci_sdr(reference_pt, estimation_pt)
     tensor([12.6058, 12.4503], dtype=torch.float64)
@@ -254,7 +254,7 @@ def ci_sdr(
 
 
     >>> estimation = audio_data['observation'][:2]
-    >>> pb_bss.evaluation.mir_eval_sources(reference, estimation)[0]
+    >>> bss_eval_sources(reference, estimation)[0]
     array([ 1.83304215, -2.79861495])
     >>> e = torch.tensor(estimation, requires_grad=True)
     >>> sdr = ci_sdr(reference_pt, e)

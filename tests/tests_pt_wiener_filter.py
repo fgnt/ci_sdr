@@ -2,7 +2,7 @@ import numpy as np
 import scipy.signal
 import torch
 
-from mir_eval.separation import _project
+from mir_eval_bss_eval import _project
 from ci_sdr.pt.wiener_filter import wiener_filter_predict_single_input
 
 

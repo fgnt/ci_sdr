@@ -149,7 +149,7 @@ def wiener_filter_predict(
     >>> from ci_sdr.np.wiener_filter import wiener_filter_predict as np_wiener_filter_predict
     >>> x = np.array([1, 2, 3, 4, 5.])
     >>> y = np.array([1, 2, 1, 2, 1.])
-    >>> from mir_eval.separation import _project
+    >>> from mir_eval_bss_eval import _project
     >>> _project(x[None], y, 2)
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
@@ -306,7 +306,7 @@ def wiener_filter_predict_single_input(
     >>> from ci_sdr.np.wiener_filter import wiener_filter_predict as np_wiener_filter_predict
     >>> x = np.array([1, 2, 3, 4, 5.])
     >>> y = np.array([1, 2, 1, 2, 1.])
-    >>> from mir_eval.separation import _project
+    >>> from mir_eval_bss_eval import _project
     >>> _project(x[None], y, 2)
     array([ 0.41754386,  0.78596491,  1.15438596,  1.52280702,  1.89122807,
            -0.24561404])
